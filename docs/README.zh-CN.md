@@ -68,3 +68,9 @@ MCP submit_ppt 立即返回任务号，get_task 查看状态和最终文件，ca
 cleanup / MCP cleanup_history 默认只预览历史清理范围，使用 --apply 或 apply=true 才删除。保护当前版本及任务清单引用，默认保留近期版本和三版历史，拒绝路径链接或越出任务目录的目标。本次开发未删除你的实际历史文件。当前版本的预览、审核快照和任务票据暂不清理。
 
 GitHub 已实际运行首版 Windows/Linux、Python 3.10/3.12 四组检查通过；不代表这些环境中的真实 Office/LibreOffice 已测，也不需要在本机安装 WSL。
+
+## MCP 启动与依赖升级
+
+当前依赖 FastMCP >=4.1,<5，已在 4.1.0 / MCP SDK 2.3.0 验证。旧版上限 <3 已移除，Authlib 弃用警告通过升级实际解决，没有过滤警告。推广/升级横幅关闭，正常启动与错误日志保留。
+
+start_demo.py 会显示实际 FastMCP 版本并等待 agent 请求，生成 PPT 使用 CLI 或连接的 agent 工具。已运行的旧进程需 Ctrl+C 后重新启动才能载入新版。

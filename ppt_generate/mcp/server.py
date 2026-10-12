@@ -252,7 +252,7 @@ class PPTGenerateServer:
             }
 
     def run(self):
-        self.app.run(transport="stdio")
+        self.app.run(transport="stdio", show_banner=False)
 
 
 def main():
