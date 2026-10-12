@@ -179,3 +179,11 @@ ppt-generate cleanup JOB_ID --keep 3 --older-than-days 30 --apply --output-root 
 Cleanup keeps the current revision and manifest-referenced artifacts, recent revisions and active repair candidates. It rejects linked trees and only deletes resolved paths inside the named job. By default it lists candidates without deleting. Task tickets and current revision preview/review snapshots are retained; automatic scheduled cleanup is not implemented.
 
 The foundation commit was checked on GitHub Actions under Windows/Linux and Python 3.10/3.12. This verifies core/tests/build/install across those runners, not Office/LibreOffice rendering there.
+
+## MCP version and startup
+
+The supported MCP dependency is FastMCP >=4.1,<5, tested with 4.1.0 and MCP SDK 2.3.0. Startup logs show the installed version and that the stdio service is waiting for agent requests. Advertising/update banners are disabled; runtime warnings and errors are not filtered out.
+
+start_demo.py starts the MCP service and waits for an agent client. It does not automatically generate a deck. Restart an already-running process after upgrading. Use the CLI generation/rendering commands or the offline document example to make a presentation.
+
+When migrating an existing v2 environment, pip can remove overlapping implementation files during uninstall. If import fails after upgrade, reinstall the implementation package matching the installed FastMCP version. The local 2.14.7 -> 4.1.0 migration was repaired with python -m pip install --force-reinstall --no-deps "fastmcp-slim[client,server]==4.1.0". Fresh installations used in CI do not need this repair step.

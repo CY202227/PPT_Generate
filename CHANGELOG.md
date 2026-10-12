@@ -2,6 +2,9 @@
 
 ## 0.4.0 — unreleased
 
+- Migrate MCP dependency to FastMCP >=4.1,<5 and MCP SDK v2.
+- Quiet stdio startup banner, explicit installed version/wait state, and startup log regression checks.
+
 - Adaptive page budgets for CLI/MCP generation with exact-count compatibility mode.
 - Persisted bounded MCP generation queue, planning cancellation, export recovery and orderly shutdown.
 - Explicit dry-run-first revision/terminal-candidate cleanup with path/link guards.

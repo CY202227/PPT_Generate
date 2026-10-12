@@ -22,8 +22,6 @@ from pathlib import Path
 
 def main():
     """Start the MCP server."""
-    print("Starting PPT Generate MCP Server...", file=sys.stderr)
-
     # Set PYTHONPATH to include the project root
     project_root = str(Path(__file__).parent.absolute())
     if "PYTHONPATH" in os.environ:
@@ -33,8 +31,15 @@ def main():
 
     # Import and run the MCP server
     try:
+        from fastmcp import __version__ as fastmcp_version
+
         from ppt_generate.mcp.server import main as mcp_main
 
+        print(
+            f"PPT Generate MCP server (FastMCP {fastmcp_version}): waiting for agent requests. "
+            "Press Ctrl+C to stop.",
+            file=sys.stderr,
+        )
         mcp_main()
     except ImportError as e:
         print(f"Could not import MCP server: {e}", file=sys.stderr)
