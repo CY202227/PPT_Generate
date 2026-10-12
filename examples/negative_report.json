@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "title": "Simulated operating variance review",
+  "slides": [
+    {"layout":"cover","title":"Operating variance review","subtitle":"Simulated figures · 2026 Q3","source":"Source: synthetic operating ledger"},
+    {"layout":"bullets","title":"Operating summary","bullets":["Variance improved from -30 units in Q1 to 10 units in Q3","Q3 delivery variance was 10 units against an unchanged target"],"source":"Source: synthetic operating ledger"},
+    {"layout":"chart","title":"Variance against operating target","chart_type":"column","unit":"units","period":"2026 Q1–Q3","categories":["Q1","Q2","Q3"],"series":[{"name":"Actual variance","values":[-30,-10,10]}],"source":"Source: synthetic operating ledger"},
+    {"layout":"table","title":"Comparative operating variances","headers":["Measure","Q2","Q3"],"rows":[["Delivery variance","-10","10"],["Customer variance","-5","2"]],"source":"Source: synthetic operating ledger"},
+    {"layout":"split","title":"Actions and ownership","columns":[{"heading":"Delivery planning","bullets":["Distribute delivery dates across the month","Delivery lead reviews scheduling weekly"]},{"heading":"Customer renewals","bullets":["Begin renewal conversations one month ahead","Customer lead tracks open decisions"]}],"source":"Source: synthetic operating plan"}
+  ]
+}

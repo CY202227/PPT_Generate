@@ -1,5 +1,10 @@
 # Environment variables
 .env
+outputs/
+.wheel-test/
+.pytest_cache/
+.ruff_cache/
+benchmarks/*/preview-*.png
 data/
 backup/
 template/
@@ -72,4 +77,4 @@ coverage.xml
 dmypy.json
 
 # Pyre type checker
-.pyre/ 
+.pyre/

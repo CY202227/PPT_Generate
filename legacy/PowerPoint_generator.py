@@ -863,7 +863,6 @@ def main():
         # 设置测试参数
         api_key = os.getenv("API_KEY")
         base_url = os.getenv("BASE_URL")
-        print(api_key, base_url)
         template_path = "template_dfsj.pptx"
         output_path = "generated_ppt1.pptx"
         model_name = "Qwen-72B"
@@ -915,4 +914,4 @@ def main():
         print(f"程序执行失败: {e}")
 
 if __name__ == '__main__':
-    main() 
+    main()

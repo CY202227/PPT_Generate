@@ -1,0 +1,17 @@
+include LICENSE NOTICE README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md
+include start_demo.py requirements.txt requirements-dev.txt
+include .env.example
+recursive-include tools *.py *.ps1
+recursive-include .github *.yml
+recursive-include ppt_generate/resources *.json
+recursive-include ppt_generate/resources *.ps1
+recursive-include examples *.json *.md *.py
+recursive-include docs *.md
+recursive-include docs/gallery *.png
+prune legacy
+prune benchmarks
+prune outputs
+prune tmp
+prune .venv
+exclude .env
+global-exclude *.pyc __pycache__

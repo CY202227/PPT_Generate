@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ppt-generate"
+version = "0.4.0"
+description = "Editable enterprise PowerPoint pipeline with agent and MCP interfaces"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+dependencies = ["python-pptx>=1.0.2,<2", "python-dotenv>=1,<2", "jsonschema>=4.20,<5", "filelock>=3.13,<4"]
+
+[project.optional-dependencies]
+llm = ["openai>=1.50,<3"]
+mcp = ["fastmcp>=2.14,<3"]
+documents = ["PyMuPDF>=1.24,<2", "python-docx>=1.2,<2"]
+preview = ["PyMuPDF>=1.24,<2"]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1", "build>=1.2,<2"]
+
+[project.scripts]
+ppt-generate = "ppt_generate.cli:main"
+ppt-generate-mcp = "ppt_generate.mcp.server:main"
+
+[tool.setuptools.packages.find]
+include = ["ppt_generate*"]
+
+[tool.setuptools.package-data]
+"ppt_generate.resources" = ["*.json", "*.ps1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

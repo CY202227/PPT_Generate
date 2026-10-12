@@ -1,0 +1,157 @@
+{
+  "schema_version": "1.0",
+  "title": "示例企业季度经营汇报",
+  "slides": [
+    {
+      "layout": "cover",
+      "title": "示例企业季度经营汇报",
+      "subtitle": "2026 Q3 管理层汇报；数据为模拟数据，来源：synthetic operating ledger",
+      "source": "来源：synthetic operating ledger；模拟数据",
+      "notes": "本演示基于模拟经营台账，所有数字均为模拟数据，仅用于示例企业 2026 Q3 管理层汇报。"
+    },
+    {
+      "layout": "bullets",
+      "title": "执行摘要",
+      "source": "来源：synthetic operating ledger；模拟数据",
+      "notes": "数据为模拟数据，来源：synthetic operating ledger。",
+      "bullets": [
+        "2026 Q3 收入 150 万元，Q2 为 125 万元，Q1 为 100 万元。",
+        "Q3 付费客户 300 家，Q2 为 250 家。",
+        "Q3 毛利率 62%，Q2 为 60%。",
+        "Q3 订阅收入 110 万元，项目服务收入 40 万元。",
+        "风险：月末交付工作集中；续约决策时间较长。",
+        "下季度：交付、客户、财务负责人分别推进排期、续约流程与月度指标复核。"
+      ]
+    },
+    {
+      "layout": "chart",
+      "title": "收入趋势",
+      "source": "来源：synthetic operating ledger；模拟数据",
+      "notes": "数据为模拟数据，来源：synthetic operating ledger。",
+      "chart_type": "line",
+      "unit": "万元",
+      "period": "2026 Q1-Q3",
+      "categories": [
+        "Q1",
+        "Q2",
+        "Q3"
+      ],
+      "series": [
+        {
+          "name": "收入",
+          "values": [
+            100,
+            125,
+            150
+          ]
+        }
+      ]
+    },
+    {
+      "layout": "chart",
+      "title": "付费客户变化",
+      "source": "来源：synthetic operating ledger；模拟数据",
+      "notes": "数据为模拟数据，来源：synthetic operating ledger。",
+      "chart_type": "column",
+      "unit": "家",
+      "period": "2026 Q2-Q3",
+      "categories": [
+        "Q2",
+        "Q3"
+      ],
+      "series": [
+        {
+          "name": "付费客户",
+          "values": [
+            250,
+            300
+          ]
+        }
+      ]
+    },
+    {
+      "layout": "chart",
+      "title": "毛利率变化",
+      "source": "来源：synthetic operating ledger；模拟数据",
+      "notes": "数据为模拟数据，来源：synthetic operating ledger。",
+      "chart_type": "column",
+      "unit": "%",
+      "period": "2026 Q2-Q3",
+      "categories": [
+        "Q2",
+        "Q3"
+      ],
+      "series": [
+        {
+          "name": "毛利率",
+          "values": [
+            60,
+            62
+          ]
+        }
+      ]
+    },
+    {
+      "layout": "chart",
+      "title": "Q3 收入结构",
+      "source": "来源：synthetic operating ledger；模拟数据",
+      "notes": "数据为模拟数据，来源：synthetic operating ledger。",
+      "chart_type": "column",
+      "unit": "万元",
+      "period": "2026 Q3",
+      "categories": [
+        "订阅收入",
+        "项目服务收入"
+      ],
+      "series": [
+        {
+          "name": "Q3 收入",
+          "values": [
+            110,
+            40
+          ]
+        }
+      ]
+    },
+    {
+      "layout": "bullets",
+      "title": "风险与应对",
+      "source": "来源：synthetic operating ledger；模拟数据",
+      "notes": "数据为模拟数据，来源：synthetic operating ledger。",
+      "bullets": [
+        "风险：月末交付工作集中。",
+        "应对：将交付日期分散到月内。",
+        "风险：续约决策时间较长。",
+        "应对：提前一个月启动续约谈判。"
+      ]
+    },
+    {
+      "layout": "table",
+      "title": "下季度计划",
+      "source": "来源：synthetic operating ledger；模拟数据",
+      "notes": "数据为模拟数据，来源：synthetic operating ledger。",
+      "headers": [
+        "负责人",
+        "事项",
+        "期限"
+      ],
+      "rows": [
+        [
+          "交付负责人",
+          "调整排期",
+          "10月底前"
+        ],
+        [
+          "客户负责人",
+          "更新续约流程",
+          "11月中旬前"
+        ],
+        [
+          "财务负责人",
+          "月度复核经营指标",
+          "每月"
+        ]
+      ]
+    }
+  ]
+}

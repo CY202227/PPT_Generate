@@ -57,7 +57,7 @@ class Logger:
         cls._logger.setLevel(logging.INFO)
 
         # Create console handler with Google-style formatter
-        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler = logging.StreamHandler(sys.stderr)
         console_handler.setLevel(logging.INFO)
 
         # Google-style log format: [LEVEL] timestamp file:line message
