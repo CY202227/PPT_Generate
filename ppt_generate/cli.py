@@ -11,6 +11,7 @@ from .core.deck import get_schema, validate_deck
 from .core.documents import extract_document
 from .core.errors import failure
 from .core.pipeline import DeckPipeline, plan_deck
+from .core.retention import cleanup_job
 
 
 def main():
@@ -35,6 +36,7 @@ def main():
     p.add_argument("--topic", required=True)
     p.add_argument("--report", required=True, type=Path)
     p.add_argument("--slides", type=int, default=8)
+    p.add_argument("--slide-count-mode", choices=["exact", "adaptive"], default="adaptive")
     p.add_argument("--audience", default="general")
     p.add_argument("--env-file", type=Path)
     p.add_argument("--output-root", type=Path)
@@ -73,6 +75,12 @@ def main():
     p.add_argument("--note", default="")
     p.add_argument("--base-revision", required=True)
     p.add_argument("--output-root", type=Path)
+    p = commands.add_parser("cleanup")
+    p.add_argument("job_id")
+    p.add_argument("--keep", type=int, default=3)
+    p.add_argument("--older-than-days", type=int, default=30)
+    p.add_argument("--apply", action="store_true")
+    p.add_argument("--output-root", type=Path)
     args = parser.parse_args()
     try:
         if args.command == "schema":
@@ -100,7 +108,14 @@ def main():
             report = f"SOURCE: {source['source']}\n{source['text']}"
             diagnostics = {}
             deck = asyncio.run(
-                plan_deck(args.topic, args.slides, args.audience, report, diagnostics=diagnostics)
+                plan_deck(
+                    args.topic,
+                    args.slides,
+                    args.audience,
+                    report,
+                    diagnostics=diagnostics,
+                    slide_count_mode=args.slide_count_mode,
+                )
             )
             pipeline = DeckPipeline(args.output_root)
             result = pipeline.render(deck, generation_report=diagnostics, source_material=report)
@@ -127,6 +142,14 @@ def main():
         elif args.command == "review":
             result = DeckPipeline(args.output_root).record_review(
                 args.job_id, args.kind, args.decision, args.reviewer, args.base_revision, args.note
+            )
+        elif args.command == "cleanup":
+            result = cleanup_job(
+                DeckPipeline(args.output_root),
+                args.job_id,
+                args.keep,
+                args.older_than_days,
+                args.apply,
             )
         else:
             slide = json.loads(args.slide.read_text(encoding="utf-8-sig"))

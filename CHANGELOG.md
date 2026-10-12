@@ -2,6 +2,12 @@
 
 ## 0.4.0 — unreleased
 
+- Adaptive page budgets for CLI/MCP generation with exact-count compatibility mode.
+- Persisted bounded MCP generation queue, planning cancellation, export recovery and orderly shutdown.
+- Explicit dry-run-first revision/terminal-candidate cleanup with path/link guards.
+- Foundation branch published and verified on remote Windows/Linux Python 3.10/3.12 CI.
+
+
 - Exact chart/source quote bindings with offsets and metric/category/unit/period checks.
 - Explicit revision-bound human review records and delivery readiness gates.
 - Conservative overlap/bounds repositioning and paragraph font inheritance in measured repair.

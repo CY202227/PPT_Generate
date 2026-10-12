@@ -1,6 +1,7 @@
 """MCP tools for editable presentations, using stdio for agent integration."""
 
 import asyncio
+from contextlib import asynccontextmanager
 
 from fastmcp import FastMCP
 
@@ -8,16 +9,82 @@ from ppt_generate.core.deck import get_schema
 from ppt_generate.core.documents import extract_document
 from ppt_generate.core.errors import failure
 from ppt_generate.core.pipeline import DeckPipeline, plan_deck
+from ppt_generate.core.retention import cleanup_job
+from ppt_generate.core.tasks import GenerationQueue
 
 
 class PPTGenerateServer:
     def __init__(self, output_root=None):
-        self.app = FastMCP("ppt-generate")
         self.pipeline = DeckPipeline(output_root)
+        self.tasks = GenerationQueue(self.pipeline)
+
+        @asynccontextmanager
+        async def lifespan(app):
+            try:
+                yield
+            finally:
+                await self.tasks.close()
+
+        self.app = FastMCP("ppt-generate", lifespan=lifespan)
         self.preview_lock = asyncio.Lock()
         self._setup_tools()
 
     def _setup_tools(self):
+        @self.app.tool()
+        async def cleanup_history(
+            job_id: str, keep: int = 3, older_than_days: int = 30, apply: bool = False
+        ) -> dict:
+            """Preview old revision/terminal repair cleanup. Dry-run by default.
+
+            Never removes current artifacts; keeps latest three revisions and 30 days.
+            apply=true deletes selected history and requires the caller's explicit deletion intent.
+            """
+            try:
+                return await asyncio.to_thread(
+                    cleanup_job, self.pipeline, job_id, keep, older_than_days, apply
+                )
+            except Exception as error:
+                return failure(error)
+
+        @self.app.tool()
+        async def submit_ppt(
+            topic: str,
+            research_report: str,
+            num_slides: int = 8,
+            target_audience: str = "general",
+            slide_count_mode: str = "adaptive",
+        ) -> dict:
+            """Queue generation and return a task ID immediately. Two planners, ten active tasks.
+
+            Source is saved locally; credentials are not saved in tickets. Queued tickets
+            resume on next queue access after restart; interrupted tasks require resubmission.
+            """
+            try:
+                return await self.tasks.submit(
+                    topic, research_report, num_slides, target_audience, slide_count_mode
+                )
+            except Exception as error:
+                return failure(error)
+
+        @self.app.tool()
+        async def get_task(task_id: str) -> dict:
+            """Read queued/planning/exporting/completed/failed/cancelled/interrupted task state."""
+            try:
+                return await self.tasks.get(task_id)
+            except Exception as error:
+                return failure(error)
+
+        @self.app.tool()
+        async def cancel_task(task_id: str) -> dict:
+            """Cancel queued/planning work. Atomic export cannot be cancelled safely.
+
+            Does not abort PowerPoint previews or already-created presentations.
+            """
+            try:
+                return await self.tasks.cancel(task_id)
+            except Exception as error:
+                return failure(error)
+
         @self.app.tool()
         async def create_ppt(
             topic: str,
@@ -27,6 +94,7 @@ class PPTGenerateServer:
             research_report: str = "",
             template_pptx_path: str | None = None,
             export_format: str = "pptx",
+            slide_count_mode: str = "adaptive",
         ) -> dict:
             """Generate editable PPTX from source material. Requires LLM key and report.
 
@@ -38,7 +106,12 @@ class PPTGenerateServer:
                     raise ValueError("Supports formal PPTX only, without external templates")
                 diagnostics = {}
                 deck = await plan_deck(
-                    topic, num_slides, target_audience, research_report, diagnostics=diagnostics
+                    topic,
+                    num_slides,
+                    target_audience,
+                    research_report,
+                    diagnostics=diagnostics,
+                    slide_count_mode=slide_count_mode,
                 )
                 return await asyncio.to_thread(
                     self.pipeline.render,

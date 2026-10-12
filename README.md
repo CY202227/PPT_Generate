@@ -60,10 +60,14 @@ Install the MCP extra and configure an absolute executable path appropriate to y
 
 On Windows, the executable is `venv/Scripts/ppt-generate-mcp.exe`. Omit the dotenv setting if the upstream agent supplies all slide content and does not need model planning.
 
-The ten tools are:
+The fourteen tools are:
 
 - `get_deck_schema`: return the bundled JSON Schema 1.0.
 - `read_document`: extract bounded text from a trusted local file.
+- `submit_ppt`: submit a bounded background generation task; returns a task ID.
+- `get_task`: inspect persisted state and retrieve completed artifact paths.
+- `cancel_task`: cancel queued/planning work; atomic export is explicitly not cancellable.
+- `cleanup_history`: dry-run old revisions/terminal candidates, or delete only with explicit apply.
 - `create_ppt`: plan and render a formal PPTX from a topic, source report and requested page count.
 - `render_deck`: render agent-authored slide JSON without a model call.
 - `get_job`: load the latest manifest and deck for a saved job.
@@ -124,7 +128,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for checks and release builds. Wheel veri
 - Layout checks have backend-specific limits; automatic repair handles measured PowerPoint text overflow and conservative object repositioning. Oversized objects, crowded pages, chart labels and aesthetic certification remain unsupported.
 - External template preservation, SmartArt, automatic illustration generation and HTML/PDF export are unsupported.
 - PDF extraction does not perform OCR. Document parsing limits are documented in [SECURITY.md](SECURITY.md).
-- Planning has a total deadline and records token usage when the provider supplies it; job queues, monetary cost reporting and automatic history cleanup are not implemented.
+- Planning has a total deadline and records token usage when the provider supplies it; monetary cost reporting and scheduled automatic cleanup are not implemented. The bounded MCP queue and explicit dry-run-first history cleanup are available.
 - The local MCP server is intended for trusted agents, not untrusted multi-user access.
 
 The Microsoft financial-report reference is documented under `benchmarks/`; its third-party PPTX/images are local reference material and are excluded from release artifacts. `legacy/` preserves the older template/Marp implementation and is excluded from the supported package. Migration details are in [CHANGELOG.md](CHANGELOG.md).
@@ -159,3 +163,19 @@ python examples/document_pipeline.py --format docx --preview powerpoint
 ```
 
 Install the documents extra for PDF/DOCX. Omit preview on systems without an engine. Results are saved under outputs/document-example. These reproducible examples make no model request and deliberately do not fabricate human review.
+
+## Everyday use: page budgets, tasks and retention
+
+CLI generation and MCP create_ppt/submit_ppt default to adaptive slide counts: the requested count is a maximum. Sparse source material may produce fewer pages rather than filler. Use --slide-count-mode exact (or slide_count_mode=exact) when an exact count is required. Direct Python plan_deck retains its exact-count default for compatibility. Planning records requested/actual counts; this is still model judgement, not a proof of content completeness.
+
+submit_ppt returns a task_id immediately. get_task reports queued, planning, exporting, completed, failed, cancelled or interrupted. Two planners process at most ten active tickets. Source requests are saved locally under outputs/tasks; API credentials are not in tickets, and public status omits the request text. Only one queue owner may use an output root at a time. Queued tickets resume on the next queue access; interrupted planning is never silently replayed. Completed exports can be recovered from their saved job IDs after restart. Resubmit interrupted planning explicitly if wanted. cancel_task cancels queued or planning work; once atomic export starts it returns not_cancellable. It does not kill PowerPoint or remove completed files. The MCP server waits for exports during orderly shutdown.
+
+```sh
+ppt-generate cleanup JOB_ID --output-root outputs
+# Inspect selected paths first; the following is an explicit deletion request:
+ppt-generate cleanup JOB_ID --keep 3 --older-than-days 30 --apply --output-root outputs
+```
+
+Cleanup keeps the current revision and manifest-referenced artifacts, recent revisions and active repair candidates. It rejects linked trees and only deletes resolved paths inside the named job. By default it lists candidates without deleting. Task tickets and current revision preview/review snapshots are retained; automatic scheduled cleanup is not implemented.
+
+The foundation commit was checked on GitHub Actions under Windows/Linux and Python 3.10/3.12. This verifies core/tests/build/install across those runners, not Office/LibreOffice rendering there.

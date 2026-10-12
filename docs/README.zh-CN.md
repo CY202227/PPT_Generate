@@ -58,3 +58,13 @@ bind-evidence / MCP bind_evidence 将图表值绑定到 source.txt 中的确切�
 review / MCP record_review 可记录用户明确提供的事实或视觉审核结果。结果绑定当前版本，自动检查有问题时人工批准不能绕过。内容改动会清除旧审核，重新预览会清除视觉批准，重新绑定引用会清除事实批准。所有必需检查和人工审核通过后才能标记 ready。本地记录不认证审核者身份。
 
 完整的无模型 PDF / DOCX 示例：python examples/document_pipeline.py --format pdf --preview powerpoint，或改为 --format docx。示例会创建模拟报告、提取文本、生成五页 PPT、绑定图表引用并实际预览，不会伪造人工审核。需要 documents 可选依赖；结果写入 outputs/document-example。
+
+## 日常使用基础
+
+生成默认采用弹性页数，指定页数为上限，材料少时可少生成；需要固定页数时使用 --slide-count-mode exact。Python plan_deck 的默认行为仍为固定页数，避免破坏已有调用。
+
+MCP submit_ppt 立即返回任务号，get_task 查看状态和最终文件，cancel_task 可取消排队或规划阶段。默认最多十个活动任务、两个并发规划。同一输出目录只允许一个队列持有者。重启后恢复未开始的排队任务；被中断的规划不会自动重发模型请求，已导出文件可由保存的任务关联恢复。开始导出后不可取消；正常关闭服务会等待导出完成。任务源文会保存在本地，状态响应不回显源文，票据不保存密钥。
+
+cleanup / MCP cleanup_history 默认只预览历史清理范围，使用 --apply 或 apply=true 才删除。保护当前版本及任务清单引用，默认保留近期版本和三版历史，拒绝路径链接或越出任务目录的目标。本次开发未删除你的实际历史文件。当前版本的预览、审核快照和任务票据暂不清理。
+
+GitHub 已实际运行首版 Windows/Linux、Python 3.10/3.12 四组检查通过；不代表这些环境中的真实 Office/LibreOffice 已测，也不需要在本机安装 WSL。

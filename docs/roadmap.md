@@ -8,7 +8,7 @@
 - Local Windows actual-PowerPoint preview inspection.
 - CI definition for Windows/Linux and Python 3.10/3.12.
 
-CI is configured, not claimed to have passed on GitHub before it has actually run.
+The foundation commit passed GitHub CI on Windows/Linux Python 3.10/3.12. Real Office/LibreOffice rendering on those remote runners remains unverified.
 
 ## Required before calling output production quality
 
@@ -22,7 +22,7 @@ CI is configured, not claimed to have passed on GitHub before it has actually ru
 ## Subsequent scope
 
 - Template mapping with explicit supported/unsupported objects.
-- Retention and orphaned-job cleanup.
+- Scheduled cleanup and current preview/review snapshot retention (explicit old revision/terminal candidate cleanup is implemented).
 - Native KPI and richer comparison layouts.
 - Configurable typography/theme, source citations and evidence preservation.
 

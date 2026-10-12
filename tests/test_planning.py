@@ -57,6 +57,43 @@ def test_missing_evidence_does_not_call_model(monkeypatch):
         asyncio.run(plan_deck("Report", 1, "general", ""))
 
 
+def test_adaptive_mode_accepts_fewer_pages_instead_of_filler(monkeypatch):
+    deck = {
+        "schema_version": "1.0",
+        "title": "Report",
+        "slides": [{"layout": "cover", "title": "Report"}],
+    }
+    calls = []
+
+    class Client:
+        def __init__(self, **kwargs):
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        async def create(self, **kwargs):
+            calls.append(kwargs)
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(deck)))]
+            )
+
+    monkeypatch.setattr(openai, "AsyncOpenAI", Client)
+    monkeypatch.setattr(config.generator, "api_key", "test-placeholder")
+    diagnostics = {}
+    result = asyncio.run(
+        plan_deck(
+            "Report", 8, "general", "Only one finding", diagnostics, slide_count_mode="adaptive"
+        )
+    )
+    assert result == deck and len(calls) == 1
+    assert diagnostics["actual_slides"] == 1 and diagnostics["requested_slides"] == 8
+    assert "use fewer pages" in calls[0]["messages"][1]["content"]
+
+
 def test_editorial_feedback_repairs_and_records_attempts(monkeypatch):
     bad = {
         "schema_version": "1.0",

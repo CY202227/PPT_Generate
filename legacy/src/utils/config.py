@@ -33,7 +33,7 @@ logger = Logger.get_logger(__name__)
 @dataclass
 class SearxngConfig:
     """Configuration for Searxng search service."""
-    url: str = "http://47.100.251.249:8888/search"
+    url: str = "http://localhost:8888/search"
     timeout: int = 30
     max_concurrent: int = 10
     default_count: int = 10
@@ -42,7 +42,7 @@ class SearxngConfig:
 @dataclass
 class ImageGenConfig:
     """Configuration for image generation service."""
-    url: str = "http://47.100.251.249:38089/generate_image"
+    url: str = "http://localhost:38089/generate_image"
     timeout: int = 60
     default_denoising_strength: float = 1.0
     default_height: int = 512

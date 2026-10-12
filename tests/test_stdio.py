@@ -24,6 +24,10 @@ def test_external_agent_startup(tmp_path):
                 "repair_ppt",
                 "bind_evidence",
                 "record_review",
+                "submit_ppt",
+                "get_task",
+                "cancel_task",
+                "cleanup_history",
             }
             result = await client.call_tool("get_deck_schema", {})
             assert result.data["schema_version"] == "1.0"
