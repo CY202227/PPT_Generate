@@ -19,9 +19,10 @@ import os
 import sys
 from pathlib import Path
 
+
 def main():
     """Start the MCP server."""
-    print("🚀 Starting PPT Generate MCP Server...")
+    print("Starting PPT Generate MCP Server...", file=sys.stderr)
 
     # Set PYTHONPATH to include the project root
     project_root = str(Path(__file__).parent.absolute())
@@ -32,15 +33,16 @@ def main():
 
     # Import and run the MCP server
     try:
-        from src.mcp.server import main as mcp_main
+        from ppt_generate.mcp.server import main as mcp_main
+
         mcp_main()
     except ImportError as e:
-        print(f"❌ Error: Could not import MCP server. Make sure dependencies are installed. {e}")
+        print(f"Could not import MCP server: {e}", file=sys.stderr)
         sys.exit(1)
     except KeyboardInterrupt:
-        print("\n👋 MCP Server stopped by user")
+        print("MCP Server stopped", file=sys.stderr)
     except Exception as e:
-        print(f"❌ Failed to start MCP Server: {e}")
+        print(f"Failed to start MCP Server: {e}", file=sys.stderr)
         sys.exit(1)
 
 

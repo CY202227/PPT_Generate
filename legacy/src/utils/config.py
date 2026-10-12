@@ -24,7 +24,7 @@ from .logging import Logger
 
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 logger = Logger.get_logger(__name__)
@@ -33,7 +33,7 @@ logger = Logger.get_logger(__name__)
 @dataclass
 class SearxngConfig:
     """Configuration for Searxng search service."""
-    url: str = "http://47.100.251.249:8888/search"
+    url: str = "http://localhost:8888/search"
     timeout: int = 30
     max_concurrent: int = 10
     default_count: int = 10
@@ -42,7 +42,7 @@ class SearxngConfig:
 @dataclass
 class ImageGenConfig:
     """Configuration for image generation service."""
-    url: str = "http://47.100.251.249:38089/generate_image"
+    url: str = "http://localhost:38089/generate_image"
     timeout: int = 60
     default_denoising_strength: float = 1.0
     default_height: int = 512
@@ -124,9 +124,9 @@ class Config:
 
         # Generator configuration
         # Support multiple environment variable names for flexibility
-        model_name = os.getenv("LLM_MODEL_NAME") or os.getenv("GENERATOR_MODEL") or GeneratorConfig.model_name
-        api_key = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("LLM_BASE_URL") or os.getenv("OPENAI_BASE_URL")
+        model_name = os.getenv("LLM_MODEL_NAME") or os.getenv("MODEL_NAME") or os.getenv("GENERATOR_MODEL") or GeneratorConfig.model_name
+        api_key = os.getenv("LLM_API_KEY") or os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY")
+        base_url = os.getenv("LLM_BASE_URL") or os.getenv("API_BASE_URL") or os.getenv("OPENAI_BASE_URL")
 
         self.generator = GeneratorConfig(
             model_name=model_name,
