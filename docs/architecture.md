@@ -16,7 +16,7 @@ Job loading derives the deck path from a validated revision identifier rather th
 
 Quality reports separate structural/capacity checks, editorial heuristics, actual engine measurements and human visual review. The renderer's pre-export capacity check remains an estimate. Optional PowerPoint previews measure real text bounds and ordinary textbox overlap; LibreOffice's PDF checks have a narrower scope. Immutable preview snapshots are attached to the exact revision and stale previews do not transfer to edits. CI verifies adapter behavior and editable data; local real-engine checks and their limits are described in docs/quality.md.
 
-Optional extras keep basic rendering independent of model providers and MCP. Source material is sent externally only by planning. The package never loads a repository `.env` implicitly; use environment variables, `PPT_GENERATE_ENV_FILE`, or the CLI's `--env-file`.
+Optional extras keep basic rendering independent of model providers and MCP. The `mcp` extra includes PyMuPDF so the default no-Office preview tool works after a single MCP install; the standalone API/CLI preview remains in the `preview` extra. Source material is sent externally only by planning. The package never loads a repository `.env` implicitly; use environment variables, `PPT_GENERATE_ENV_FILE`, or the CLI's `--env-file`.
 
 ## Office-independent preview and MCP editing
 

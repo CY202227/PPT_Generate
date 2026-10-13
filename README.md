@@ -2,7 +2,7 @@
 
 Editable enterprise PowerPoint generation for agent workflows.
 
-**Status: alpha (0.4.0, unreleased).** This project provides a reusable local pipeline, not a guarantee of enterprise design quality. It creates native editable text, tables and charts. Explicit human visual and factual review is required before a job can be marked ready.
+**Status: 0.5.0 alpha, unreleased.** This project provides a reusable local pipeline for agent-authored and model-planned decks. It creates native editable text, tables and charts, supports Office-free previews through MCP, and keeps explicit human visual and factual review before a job can be marked ready. It does not claim enterprise design quality.
 
 [中文说明](docs/README.zh-CN.md) · [Architecture](docs/architecture.md) · [Release gates](docs/roadmap.md)
 
@@ -42,7 +42,7 @@ Generation sends supplied material to your configured provider. It requires evid
 
 ## Agent integration
 
-Install the MCP extra and configure an absolute executable path appropriate to your environment:
+Install the MCP extra and configure an absolute executable path appropriate to your environment. The MCP extra includes the Office-free preview dependency so agents receive preview images without a separate extra:
 
 ```json
 {
@@ -59,6 +59,8 @@ Install the MCP extra and configure an absolute executable path appropriate to y
 ```
 
 On Windows, the executable is `venv/Scripts/ppt-generate-mcp.exe`. Omit the dotenv setting if the upstream agent supplies all slide content and does not need model planning.
+
+The eighteen tools support this loop: render agent-authored JSON or ask the model to draft a deck, read the latest job, inspect a slide image, update that slide with its revision token, then export the revised editable PPTX. `preview_slide` returns an MCP image so the agent client does not need browser control. Human reviewers can open the returned HTML gallery.
 
 The eighteen tools are:
 
@@ -122,7 +124,7 @@ python -m pip install ".[preview]"
 ppt-generate preview JOB_ID --backend libreoffice --output-root outputs
 ```
 
-`render` and `generate` also accept `--preview-backend`. `auto` now selects the Office-independent `native` backend. Install `pip install -e ".[preview,mcp]"` for PNG previews and MCP integration. Native preview reads exported PPTX geometry and produces SVG, PNG and an offline HTML gallery; fonts and chart internals can differ from Office. PowerPoint and LibreOffice remain explicit optional backends. Reports keep `visual_review: required`; known Office issues remain blockers after native preview. See the [sample gallery](docs/gallery/index.md).
+`render` and `generate` also accept `--preview-backend`. `auto` selects the Office-independent `native` backend. Install `pip install -e ".[preview]"` for PNG previews in the local Python API or CLI; the MCP extra already includes it. Native preview reads exported PPTX geometry and produces SVG, PNG and an offline HTML gallery; fonts and chart internals can differ from Office. PowerPoint and LibreOffice remain explicit optional backends. Reports keep `visual_review: required`; known Office issues remain blockers after native preview. See the [sample gallery](docs/gallery/index.md).
 
 Agents do not need browser control: call `get_slide(job_id, page_number)` to read page content and geometry, `preview_slide` to receive an inline PNG, then `update_slide(job_id, page_number, slide, base_revision)` to save a page and receive a new editable PPTX and preview. Use the returned revision as `base_revision`; stale edits are rejected. Image-capable MCP clients can inspect the PNG directly; text clients receive structured geometry. The HTML gallery is read-only; an interactive browser editor is not yet implemented. A preview failure after an edit preserves the exported revision and returns `preview_error`.
 

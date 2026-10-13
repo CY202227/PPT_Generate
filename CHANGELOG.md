@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0 — unreleased alpha
+
+- Make the MCP install include the Office-independent preview dependency, so agents can receive slide images after a single documented install.
+- Document the full agent loop from JSON or model planning through inline preview, revision-protected editing and editable PPTX export.
+- Align package metadata, CLI version and English/Chinese documentation on 0.5.0.
+- Terminate isolated external renderer process groups on timeout/interruption and clean incomplete revision staging.
+- Explicit retention for unreferenced preview/review snapshots and terminal task tickets; protect active work and reject linked cleanup targets.
+
 ## 0.4.0 — unreleased
 
 - Explicit current preview/review snapshot and terminal task-ticket retention, with active/reference protection.
