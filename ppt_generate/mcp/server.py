@@ -226,7 +226,10 @@ class PPTGenerateServer:
 
         @self.app.tool()
         async def get_job(job_id: str) -> dict:
-            """Retrieve latest manifest and editable deck JSON to resume or revise a saved job."""
+            """Retrieve latest manifest, deck and quality findings to resume or revise a job.
+
+            Includes source/calculate proof checks without needing filesystem JSON access.
+            """
             try:
                 return await asyncio.to_thread(self.pipeline.get_job, job_id)
             except Exception as error:

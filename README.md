@@ -207,3 +207,5 @@ python examples/calculated_pipeline.py --preview powerpoint
 ```
 
 This offline synthetic example derives 25% growth from 100 and 125, stores the complete proof and previews a native editable chart. Omit preview where no engine exists. Human review remains pending: valid arithmetic and matching context cannot establish that the chosen source facts, metric relationship, category or negative-baseline interpretation are appropriate.
+
+get_job now returns quality findings and calculation references alongside the manifest/deck, so an upstream agent can inspect failures without opening local JSON files. Saved job IDs are checked against the requested job before loading its report.

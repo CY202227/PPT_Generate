@@ -82,6 +82,10 @@ def test_valid_derivation_only_exempts_its_chart_path_and_resets_review(tmp_path
     good = pipeline.bind_evidence(original["job_id"], bindings, original["revision"])
     assert good["delivery"]["blocked_by"] == []
     assert not good["delivery"]["ready"]
+    assert (
+        pipeline.get_job(original["job_id"])["quality"]["provenance"]["references"][0]["status"]
+        == "calculation_checks_passed"
+    )
     pipeline.record_review(
         original["job_id"], "factual_review", "approved", "Test reviewer", original["revision"]
     )

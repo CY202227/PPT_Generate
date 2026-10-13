@@ -95,6 +95,8 @@ class DeckPipeline:
             raise ValueError("invalid job_id")
         job = self.root / job_id
         manifest = json.loads((job / "manifest.json").read_text(encoding="utf-8"))
+        if manifest.get("job_id") != job_id:
+            raise ValueError("saved manifest job_id does not match requested job")
         revision = manifest.get("revision")
         if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{32}", revision):
             raise ValueError("invalid saved revision")
@@ -102,7 +104,7 @@ class DeckPipeline:
         if deck_path.resolve().parent.parent != job.resolve():
             raise ValueError("saved revision escapes job directory")
         deck = validate_deck(json.loads(deck_path.read_text(encoding="utf-8")))
-        return {"manifest": manifest, "deck": deck}
+        return {"manifest": manifest, "deck": deck, "quality": self._quality(manifest)}
 
     def revise(self, job_id, page_number, slide, base_revision=None):
         if not isinstance(job_id, str) or not re.fullmatch(r"[0-9a-f]{32}", job_id):
