@@ -20,6 +20,8 @@ LibreOffice exports a PDF using a separate process profile and renders it throug
 
 The default `auto` backend is now `native`: exported PPTX geometry and editable text/table/chart data are resolved into SVG and rendered to PNG by PyMuPDF. This works without Office, LibreOffice or browser control. Its text capacity/overlap checks estimate font metrics; chart internals and fonts can differ from Office. The report states `office_verification: not_performed`. MCP returns page images directly and the HTML gallery supports human inspection. Neither preview nor successful repair grants automatic human review approval. Native and PowerPoint text-capacity reports can drive the bounded repair loop; optional Office issues remain blockers even after another native preview.
 
+External engine commands run in an isolated process group. On timeout or interruption, cleanup sends a graceful signal and then terminates the group before releasing the cross-process renderer lock. PowerPoint and LibreOffice previews run synchronously and cannot be force-cancelled through the generation queue; the configured engine timeout bounds their run. Temporary revision staging is removed when the call returns or times out. A PowerPoint COM server started outside the command's process tree may still require manual inspection if Office itself hangs.
+
 Preview snapshots are bound to a revision. A failed preview leaves the current manifest/PPTX intact. A new content revision does not inherit old preview success. `visual_review` remains `required`, even when measured checks pass.
 
 ## Local verification

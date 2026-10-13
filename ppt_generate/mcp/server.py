@@ -100,7 +100,7 @@ class PPTGenerateServer:
         async def cleanup_history(
             job_id: str, keep: int = 3, older_than_days: int = 30, apply: bool = False
         ) -> dict:
-            """Preview old revision/terminal repair cleanup. Dry-run by default.
+            """Preview old revisions, terminal repairs and unused current snapshots for cleanup.
 
             Never removes current artifacts; keeps latest three revisions and 30 days.
             apply=true deletes selected history and requires the caller's explicit deletion intent.
@@ -109,6 +109,20 @@ class PPTGenerateServer:
                 return await asyncio.to_thread(
                     cleanup_job, self.pipeline, job_id, keep, older_than_days, apply
                 )
+            except Exception as error:
+                return failure(error)
+
+        @self.app.tool()
+        async def cleanup_tasks(
+            keep: int = 20, older_than_days: int = 30, apply: bool = False
+        ) -> dict:
+            """Preview old terminal ticket cleanup; dry-run by default.
+
+            Protects active tasks and exported PPTX jobs. apply=true requires explicit
+            deletion intent. Removed ticket IDs become unavailable to get_task.
+            """
+            try:
+                return await self.tasks.cleanup(keep, older_than_days, apply)
             except Exception as error:
                 return failure(error)
 

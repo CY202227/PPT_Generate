@@ -60,7 +60,7 @@ Install the MCP extra and configure an absolute executable path appropriate to y
 
 On Windows, the executable is `venv/Scripts/ppt-generate-mcp.exe`. Omit the dotenv setting if the upstream agent supplies all slide content and does not need model planning.
 
-The seventeen tools are:
+The eighteen tools are:
 
 - `get_slide`: read one page, its geometry and current layout issues.
 - `preview_slide`: return a PNG directly through MCP, plus SVG and an HTML gallery.
@@ -71,7 +71,8 @@ The seventeen tools are:
 - `submit_ppt`: submit a bounded background generation task; returns a task ID.
 - `get_task`: inspect persisted state and retrieve completed artifact paths.
 - `cancel_task`: cancel queued/planning work; atomic export is explicitly not cancellable.
-- `cleanup_history`: dry-run old revisions/terminal candidates, or delete only with explicit apply.
+- `cleanup_history`: dry-run old revisions, terminal candidates and unreferenced current preview/review snapshots; explicit apply deletes selected history.
+- `cleanup_tasks`: dry-run old terminal task tickets; explicit apply deletes tickets while retaining exported jobs and active tasks.
 - `create_ppt`: plan and render a formal PPTX from a topic, source report and requested page count.
 - `render_deck`: render agent-authored slide JSON without a model call.
 - `get_job`: load the latest manifest and deck for a saved job.
@@ -182,7 +183,11 @@ ppt-generate cleanup JOB_ID --output-root outputs
 ppt-generate cleanup JOB_ID --keep 3 --older-than-days 30 --apply --output-root outputs
 ```
 
-Cleanup keeps the current revision and manifest-referenced artifacts, recent revisions and active repair candidates. It rejects linked trees and only deletes resolved paths inside the named job. By default it lists candidates without deleting. Task tickets and current revision preview/review snapshots are retained; automatic scheduled cleanup is not implemented.
+Cleanup keeps the current revision and manifest-referenced artifacts, recent revisions and active repair candidates. Current preview/review snapshots use the same `keep` and age thresholds independently per category. A recent file inside an old snapshot protects the whole snapshot. Previews with retained Office evidence are conservatively kept. Linked trees, including Windows junctions, are rejected. By default cleanup lists candidates without deleting.
+
+MCP `cleanup_tasks(keep=20, older_than_days=30, apply=false)` lists old completed, failed, cancelled or interrupted tickets. `apply=true` removes selected tickets and their saved source requests; their IDs become unavailable to `get_task`. Exported jobs and all queued/planning/exporting tasks are retained. These are explicit cleanup policies; scheduled automatic deletion is not implemented.
+
+PowerPoint and LibreOffice run in an isolated process group. When the render timeout expires or the runner is interrupted, the tool stops that process group before releasing the renderer lock and discards the incomplete preview staging directory. A separately started PowerPoint COM server may still need manual inspection if Office itself hangs. External previews are synchronous; queue cancellation applies to planning work, not an active renderer call.
 
 The foundation commit was checked on GitHub Actions under Windows/Linux and Python 3.10/3.12. This verifies core/tests/build/install across those runners, not Office/LibreOffice rendering there.
 

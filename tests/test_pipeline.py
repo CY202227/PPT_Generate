@@ -92,12 +92,15 @@ def test_mcp_contract(tmp_path, deck):
                 "get_task",
                 "cancel_task",
                 "cleanup_history",
+                "cleanup_tasks",
                 "get_slide",
                 "preview_slide",
                 "update_slide",
             }
             result = await client.call_tool("render_deck", {"deck": deck})
             assert result.data["success"] is True
+            cleanup = await client.call_tool("cleanup_tasks", {})
+            assert cleanup.data["dry_run"] is True
             bad = await client.call_tool("create_ppt", {"topic": "Demo", "export_format": "pdf"})
             assert bad.data["success"] is False
 

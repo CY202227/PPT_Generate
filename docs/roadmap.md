@@ -22,7 +22,7 @@ The foundation commit passed GitHub CI on Windows/Linux Python 3.10/3.12. Real O
 ## Subsequent scope
 
 - Template mapping with explicit supported/unsupported objects.
-- Scheduled cleanup and current preview/review snapshot retention (explicit old revision/terminal candidate cleanup is implemented).
+- Scheduled cleanup and finer retention of Office preview evidence (explicit old revision, terminal candidate, current unused preview/review snapshot and terminal ticket cleanup is implemented).
 - Native KPI and richer comparison layouts.
 - Configurable typography/theme, source citations and evidence preservation.
 
