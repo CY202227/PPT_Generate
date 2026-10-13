@@ -110,7 +110,12 @@ def _render_preview(pptx_path, output_directory, backend="auto", timeout=120):
         backend = "native"
     output.mkdir(parents=True, exist_ok=True)
     if backend == "native":
-        from .native_preview import render_native
+        try:
+            from .native_preview import render_native
+        except ImportError as error:
+            raise PreviewUnavailable(
+                "Install ppt-generate[preview] for Office-independent PNG preview"
+            ) from error
 
         report = render_native(pptx, output)
     elif backend == "powerpoint":

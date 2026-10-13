@@ -60,7 +60,7 @@ The PDF and DOCX offline document examples both passed real Windows PowerPoint m
 
 The persisted queue permits cancellation only before atomic export, bounds active tickets and serializes queue ownership per output root. Stopped planning becomes interrupted and requires explicit resubmission, avoiding unexpected repeated provider spend. Export job IDs are persisted before writing artifacts so completed publication can be recovered after a crash. Tickets contain source material and must be protected like original reports. Status responses omit request text. Orderly MCP shutdown waits for exports; abrupt process termination and PowerPoint cancellation are not claimed to be safely stoppable.
 
-Retention cleanup is opt-in and dry-run by default. It locks the job, protects the current and referenced revisions, keeps recent history and only considers terminal repair candidates. Absolute resolved target and child paths must remain within the job; linked trees are rejected before recursion. Current previews/review snapshots and task tickets are retained. Tests delete synthetic temp files only; no user output cleanup was applied during development.
+Retention cleanup is opt-in and dry-run by default. It locks the job, protects the current and referenced revisions, keeps recent history and only considers terminal repair candidates, unreferenced current preview/review snapshots and terminal task tickets. Absolute resolved target and child paths must remain within the job; symlinks and Windows reparse points are rejected before deletion. Scheduled cleanup is not implemented.
 
 ## Calculation evidence
 

@@ -1,6 +1,6 @@
 # 中文使用说明
 
-项目状态：0.4.0 alpha，未发布。当前可以作为其他 agent 的本地 PPT 工具使用，但尚不能宣称生成结果达到企业设计质量。
+项目状态：0.5.0 alpha，尚未发布。当前可以作为其他 agent 的本地 PPT 工具；不宣称自动生成结果达到企业设计质量。
 
 ## 无密钥生成
 
@@ -49,6 +49,8 @@ Windows 安装 PowerPoint 后：
 
 本地密钥、生成文件和第三方参考 PPT 不进入发行包。旧代码归档于 legacy/，不作为支持的接口。后续验收关卡见 docs/roadmap.md。
 
+0.5.0 alpha 的发行门槛是：通过无源码目录安装验证；在 Windows/Linux 与 Python 3.10/3.12 CI 上通过；使用一个实际 agent 客户端按 `render → 看预览图 → 修改单页 → 导出` 完整走通。通用 stdio 协议测试不能代替选定客户端对图片显示的确认。当前版本已具备对应 MCP 工具和依赖，但该版本提交的 CI 与外部 agent 客户端验收仍需完成后才能标为发布就绪。
+
 ## 本轮新增
 
 已支持指标卡与时间线，共七种可编辑版式。修复可处理实测文字溢出，以及有足够空白空间时的文本框重叠和对象越界；复杂拥挤版面及图表内部标签仍未覆盖。
@@ -69,7 +71,7 @@ cleanup / MCP cleanup_history 默认只预览历史清理范围，使用 --apply
 
 GitHub 已实际运行首版 Windows/Linux、Python 3.10/3.12 四组检查通过；不代表这些环境中的真实 Office/LibreOffice 已测，也不需要在本机安装 WSL。
 
-现在默认预览也不需要 Office：安装 `pip install -e ".[preview,mcp]"`，`auto` / `native` 后端会读取导出 PPTX 的实际位置和内容，生成 PNG、SVG 和只读 HTML 逐页画廊。模型通过 MCP `get_slide` 读取单页、`preview_slide` 直接接收图片、`update_slide` 修改后取得新版本及预览，无须操作浏览器。修改必须带当前 `base_revision`，防止覆盖并发编辑。导出的 PPTX 仍然包含可编辑文字、表格和图表。内置预览的字体与图表内部布局可能不同于 Office，人工事实和视觉验收仍需完成；交互式浏览器编辑界面尚未实现。
+现在默认预览也不需要 Office：安装 `pip install -e ".[mcp]"` 即包含 PNG 预览依赖；本地 CLI/API 预览则安装 `pip install -e ".[preview]"`。`auto` / `native` 后端读取导出 PPTX 的实际位置和内容，生成 PNG、SVG 和只读 HTML 逐页画廊。模型通过 MCP `get_slide` 读取单页、`preview_slide` 直接接收图片、`update_slide` 修改后取得新版本及预览，无须操作浏览器。修改必须带当前 `base_revision`，防止覆盖并发编辑。导出的 PPTX 仍包含可编辑文字、表格和图表。内置预览的字体与图表内部布局可能不同于 Office，人工事实和视觉验收仍需完成；交互式浏览器编辑界面尚未实现。
 
 ## MCP 启动与依赖升级
 
