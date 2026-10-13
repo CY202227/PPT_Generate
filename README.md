@@ -187,6 +187,8 @@ Cleanup keeps the current revision and manifest-referenced artifacts, recent rev
 
 MCP `cleanup_tasks(keep=20, older_than_days=30, apply=false)` lists old completed, failed, cancelled or interrupted tickets. `apply=true` removes selected tickets and their saved source requests; their IDs become unavailable to `get_task`. Exported jobs and all queued/planning/exporting tasks are retained. These are explicit cleanup policies; scheduled automatic deletion is not implemented.
 
+PowerPoint and LibreOffice run in an isolated process group. When the render timeout expires or the runner is interrupted, the tool stops that process group before releasing the renderer lock and discards the incomplete preview staging directory. A separately started PowerPoint COM server may still need manual inspection if Office itself hangs. External previews are synchronous; queue cancellation applies to planning work, not an active renderer call.
+
 The foundation commit was checked on GitHub Actions under Windows/Linux and Python 3.10/3.12. This verifies core/tests/build/install across those runners, not Office/LibreOffice rendering there.
 
 ## MCP version and startup

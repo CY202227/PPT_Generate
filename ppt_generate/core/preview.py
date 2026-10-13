@@ -3,6 +3,7 @@
 import json
 import os
 import shutil
+import signal
 import subprocess
 import tempfile
 from importlib.resources import as_file, files
@@ -17,12 +18,75 @@ class PreviewUnavailable(RuntimeError):
     pass
 
 
-def _run(command, timeout):
+def _stop_process_tree(process):
+    """Stop only the engine process group created for this preview request."""
+    if process.poll() is not None:
+        return
+    if os.name == "nt":
+        try:
+            process.send_signal(signal.CTRL_BREAK_EVENT)
+            process.wait(timeout=3)
+            return
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        try:
+            subprocess.run(
+                ["taskkill.exe", "/PID", str(process.pid), "/T", "/F"],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+                check=False,
+                shell=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        if process.poll() is None:
+            process.kill()
+    else:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            pass
+        # The group leader may exit before its descendants; terminate the whole group.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
     try:
-        result = subprocess.run(command, capture_output=True, timeout=timeout, shell=False)
-    except (OSError, subprocess.TimeoutExpired) as error:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+
+
+def _run(command, timeout):
+    options = {
+        "shell": False,
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+    }
+    if os.name == "nt":
+        options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        options["start_new_session"] = True
+    try:
+        process = subprocess.Popen(command, **options)
+    except OSError as error:
         raise PreviewUnavailable("Preview engine unavailable or timed out") from error
-    if result.returncode:
+    try:
+        _, _ = process.communicate(timeout=timeout)
+    except BaseException as error:
+        _stop_process_tree(process)
+        if isinstance(error, subprocess.TimeoutExpired):
+            raise PreviewUnavailable("Preview engine unavailable or timed out") from error
+        raise
+    if process.returncode:
         # Do not include source paths/content from external application logs in public errors.
         raise PreviewUnavailable("Preview engine failed; verify the local engine installation")
 
