@@ -60,7 +60,11 @@ Install the MCP extra and configure an absolute executable path appropriate to y
 
 On Windows, the executable is `venv/Scripts/ppt-generate-mcp.exe`. Omit the dotenv setting if the upstream agent supplies all slide content and does not need model planning.
 
-The fourteen tools are:
+The seventeen tools are:
+
+- `get_slide`: read one page, its geometry and current layout issues.
+- `preview_slide`: return a PNG directly through MCP, plus SVG and an HTML gallery.
+- `update_slide`: revise one page with version protection, export PPTX and return its preview.
 
 - `get_deck_schema`: return the bundled JSON Schema 1.0.
 - `read_document`: extract bounded text from a trusted local file.
@@ -74,8 +78,8 @@ The fourteen tools are:
 - `revise_slide`: replace one 1-based page and publish a new revision. Optional `base_revision` rejects stale edits.
 - `bind_evidence`: attach exact source locations and quotes to chart values; checks contextual terminology and values.
 - `record_review`: record explicit human factual/visual decisions for the current revision; automatic blockers cannot be overridden.
-- `repair_ppt`: repair measured PowerPoint text overflow, conservative overlap and object bounds in isolated candidates, without changing content. At most two attempts; only a candidate with clean measured checks and no known quality blockers is promoted.
-- `preview_ppt`: export real PNG pages, measure supported layout properties, and attach version-bound evidence. Requires a local rendering engine.
+- `repair_ppt`: repair native/PowerPoint text overflow, conservative overlap and object bounds in isolated candidates, without changing content. At most two attempts; only a candidate with clean checks and no known quality blockers is promoted.
+- `preview_ppt`: export PNG pages and attach version-bound layout evidence. Defaults to native; external rendering engines are optional.
 
 Tool failures return `success: false` with `error.code` and `error.message`. Codes include `invalid_input`, `not_found`, `conflict`, `authentication`, `provider_unavailable`, `job_busy` and `internal_error`. A successful export indicates an artifact was generated, not that it passed visual review.
 
@@ -117,7 +121,9 @@ python -m pip install ".[preview]"
 ppt-generate preview JOB_ID --backend libreoffice --output-root outputs
 ```
 
-`render` and `generate` also accept `--preview-backend`. Core generation does not require an external renderer. PowerPoint measures actual text capacity in textboxes/table cells, textbox ink overlap and slide-object bounds. LibreOffice checks PDF page text bounds; its scope is narrower. Both export PNGs and verify page count. Reports keep `visual_review: required`: chart-internal labels, cell-to-cell ink overlap and aesthetics are not certified. See the [sample gallery](docs/gallery/index.md).
+`render` and `generate` also accept `--preview-backend`. `auto` now selects the Office-independent `native` backend. Install `pip install -e ".[preview,mcp]"` for PNG previews and MCP integration. Native preview reads exported PPTX geometry and produces SVG, PNG and an offline HTML gallery; fonts and chart internals can differ from Office. PowerPoint and LibreOffice remain explicit optional backends. Reports keep `visual_review: required`; known Office issues remain blockers after native preview. See the [sample gallery](docs/gallery/index.md).
+
+Agents do not need browser control: call `get_slide(job_id, page_number)` to read page content and geometry, `preview_slide` to receive an inline PNG, then `update_slide(job_id, page_number, slide, base_revision)` to save a page and receive a new editable PPTX and preview. Use the returned revision as `base_revision`; stale edits are rejected. Image-capable MCP clients can inspect the PNG directly; text clients receive structured geometry. The HTML gallery is read-only; an interactive browser editor is not yet implemented. A preview failure after an edit preserves the exported revision and returns `preview_error`.
 
 Tests cover native chart/table values, page revision preservation, failed-publication rollback, conflicting and concurrent edits, malformed contracts, document extraction, model repair mocks, installed CLI and stdio MCP startup. CI is configured for Linux/Windows and Python 3.10/3.12; actual remote CI results should be checked before a release.
 
@@ -151,7 +157,7 @@ This changes font sizes in flagged text frames and conservatively repositions fl
 
 Seven native layouts are supported: cover, bullets, split, table, chart, kpi (1–3 metrics) and timeline (1–4 events). Schema 1.0 is extended additively in this alpha; use the bundled schema rather than hard-coded layout lists.
 
-`render --source REPORT` saves extracted source material. `bind-evidence JOB_ID bindings.json --base-revision REVISION` attaches chart references. Each reference has a chart value JSON `path`, zero-based character `start` in saved source.txt, and exact `quote`. Metric, category, unit, period and value must occur in that quote; translation and derived values are not automatically certified. Missing chart bindings keep delivery pending. String claims and metric relationships still need human review.
+`render --source REPORT` saves extracted source material. `bind-evidence JOB_ID bindings.json --base-revision REVISION` attaches chart references. Each reference has a chart value JSON `path`, zero-based character `start` in saved source.txt, and exact `quote`. Metric, category, unit, period and value must occur in that quote; translation and semantic relationships are not automatically certified. Whitelisted derived values can use explicit calculation evidence. Missing chart bindings keep delivery pending. String claims and metric relationships still need human review.
 
 `review JOB_ID --kind factual_review --decision approved --reviewer NAME --base-revision REVISION` records an explicitly supplied human decision. Use visual_review after inspecting engine previews. Rejection blocks delivery. Both approvals plus all required automated checks can make delivery.ready true. This local record does not authenticate identity. Never manufacture approvals. Changed content resets reviews/bindings; fresh previews reset visual approval, and new evidence bindings reset factual approval.
 
@@ -187,3 +193,25 @@ The supported MCP dependency is FastMCP >=4.1,<5, tested with 4.1.0 and MCP SDK 
 start_demo.py starts the MCP service and waits for an agent client. It does not automatically generate a deck. Restart an already-running process after upgrading. Use the CLI generation/rendering commands or the offline document example to make a presentation.
 
 When migrating an existing v2 environment, pip can remove overlapping implementation files during uninstall. If import fails after upgrade, reinstall the implementation package matching the installed FastMCP version. The local 2.14.7 -> 4.1.0 migration was repaired with python -m pip install --force-reinstall --no-deps "fastmcp-slim[client,server]==4.1.0". Fresh installations used in CI do not need this repair step.
+
+## Source-backed calculations
+
+Evidence bindings support both literal path/start/quote and calculated path/derivation forms. The get_deck_schema MCP tool returns evidence_binding_schema for upstream agents. Calculated input quotes must contain the chart series metric and each input category, unit and period. Input periods must be represented in the output period (for example 2025–2026). Inputs must have one consistent unit; unit conversion and metric aliases/translations are not performed.
+
+Operations use ordered inputs:
+
+- sum: add 2–8 inputs; output uses the input unit.
+- difference: first minus second; output uses the input unit.
+- ratio: first divided by second; output unit is ratio.
+- percentage: first divided by second times 100; output unit is %.
+- percentage_change: (second minus first) divided by first times 100; output unit is %.
+
+precision specifies 0–6 decimal places using decimal ROUND_HALF_UP. All operands need exact source offsets/quotes, and the displayed chart value must equal the rounded result. Duplicate operands, mismatched context/units, zero denominators and wrong answers block delivery. No arbitrary expressions or code are evaluated. Only an individually verified chart path is exempted from literal-number presence checks; a matching number elsewhere in slide prose does not inherit that exemption. Rebinding resets factual approval. Geometry repair carries bindings into its candidate and rechecks them before promotion.
+
+```sh
+python examples/calculated_pipeline.py --preview powerpoint
+```
+
+This offline synthetic example derives 25% growth from 100 and 125, stores the complete proof and previews a native editable chart. Omit preview where no engine exists. Human review remains pending: valid arithmetic and matching context cannot establish that the chosen source facts, metric relationship, category or negative-baseline interpretation are appropriate.
+
+get_job now returns quality findings and calculation references alongside the manifest/deck, so an upstream agent can inspect failures without opening local JSON files. Saved job IDs are checked against the requested job before loading its report.

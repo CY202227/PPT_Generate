@@ -40,6 +40,22 @@ def test_revision_conflict(tmp_path):
         pipeline.revise(original["job_id"], 1, deck["slides"][0], original["revision"])
 
 
+def test_manifest_cannot_impersonate_another_job(tmp_path):
+    pipeline = DeckPipeline(tmp_path)
+    deck = {
+        "schema_version": "1.0",
+        "title": "Report",
+        "slides": [{"layout": "cover", "title": "Report"}],
+    }
+    result = pipeline.render(deck)
+    path = tmp_path / result["job_id"] / "manifest.json"
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["job_id"] = "a" * 32
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="job_id"):
+        pipeline.get_job(result["job_id"])
+
+
 def test_multi_process_edits_preserve_both_updates(tmp_path):
     deck = {
         "schema_version": "1.0",

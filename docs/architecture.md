@@ -10,10 +10,18 @@ Prompting also requests audience-facing writing, a summary-first narrative and d
 purposes. These are model instructions, not deterministic editorial guarantees. Known live
 planning failures are recorded in the release gates instead of being hidden by export success.
 
-Each job uses a random identifier and a random revision directory. A revision is written in a staging directory, renamed after success, then published through an atomic manifest replacement. Failed validation leaves the current manifest intact. Old revisions are retained. A process-wide MCP lock serializes tool writes; a filesystem lock protects each job across processes. `base_revision` detects stale edits. A crashed process may leave an unreferenced revision or staging directory; there is no automatic retention/garbage collection yet.
+Each job uses a random identifier and a random revision directory. A revision is written in a staging directory, renamed after success, then published through an atomic manifest replacement. Failed validation leaves the current manifest intact. Old revisions are retained. Independent MCP jobs can run concurrently; a filesystem lock protects each job across processes. A separate cross-process preview-engine lock coordinates application access. `base_revision` detects stale edits. A crashed process may leave an unreferenced revision or staging directory; explicit dry-run-first history cleanup is available; scheduled garbage collection is not implemented.
 
 Job loading derives the deck path from a validated revision identifier rather than trusting an arbitrary stored absolute path. The configured output root is a trusted storage location. Filesystem symlinks and malicious modifications to that root are outside the local trust model.
 
 Quality reports separate structural/capacity checks, editorial heuristics, actual engine measurements and human visual review. The renderer's pre-export capacity check remains an estimate. Optional PowerPoint previews measure real text bounds and ordinary textbox overlap; LibreOffice's PDF checks have a narrower scope. Immutable preview snapshots are attached to the exact revision and stale previews do not transfer to edits. CI verifies adapter behavior and editable data; local real-engine checks and their limits are described in docs/quality.md.
 
 Optional extras keep basic rendering independent of model providers and MCP. Source material is sent externally only by planning. The package never loads a repository `.env` implicitly; use environment variables, `PPT_GENERATE_ENV_FILE`, or the CLI's `--env-file`.
+
+## Office-independent preview and MCP editing
+
+Planning, slide revision, native editable PPTX export and the default SVG/PNG preview work without PowerPoint or LibreOffice. The preview extra supplies PyMuPDF for PNG rendering; no browser automation is required. Optional PowerPoint/LibreOffice checks provide additional actual-PPTX rendering evidence. Human factual and visual review remains required.
+
+MCP get_slide reads structured content and resolved geometry; preview_slide returns an inline PNG image plus SVG and an offline HTML gallery; update_slide requires the current revision, changes one page, exports native PPTX and returns its new preview. Agents use these tools directly, without clicking a browser. Text-only clients can use the structured scene. The HTML gallery is a read-only human viewing surface; an interactive browser editor remains future work.
+
+The native preview reads positions, fonts, table cells and chart data from the exported PPTX, including geometry changed by repair. Its font measurements and chart internals are approximations, not actual Office rendering. Reports record that scope and require human review. Known issues from an optional Office check remain blockers after a later native preview.

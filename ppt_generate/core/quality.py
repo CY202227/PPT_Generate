@@ -16,17 +16,24 @@ def _numbers(text):
     }
 
 
-def audit_numbers(deck, source):
+def audit_numbers(deck, source, derived_paths=()):
     """Detect unsupported literals; relationships, units and derived values need review."""
     available = _numbers(source)
     issues = []
     checked = 0
     for page, slide in enumerate(deck["slides"], 1):
         values = _numbers(" ".join([slide["title"], *_body(slide)]))
+        unsupported = bool(values - available)
         if slide["layout"] == "chart":
-            values |= {Decimal(str(v)) for s in slide["series"] for v in s["values"]}
+            for series, item in enumerate(slide["series"]):
+                for category, value in enumerate(item["values"]):
+                    number = Decimal(str(value))
+                    values.add(number)
+                    path = f"/slides/{page - 1}/series/{series}/values/{category}"
+                    if number not in available and path not in derived_paths:
+                        unsupported = True
         checked += len(values)
-        if values - available:
+        if unsupported:
             issues.append(
                 {
                     "page": page,
@@ -49,7 +56,7 @@ def audit_numbers(deck, source):
 def delivery_gate(quality):
     blocked = [
         name
-        for name in ("editorial", "evidence", "provenance", "layout")
+        for name in ("editorial", "evidence", "provenance", "layout", "office_layout")
         if quality.get(name, {}).get("status") == "issues_found"
     ]
     reviews = quality.get("reviews", {})

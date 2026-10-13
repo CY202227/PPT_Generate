@@ -69,8 +69,18 @@ cleanup / MCP cleanup_history 默认只预览历史清理范围，使用 --apply
 
 GitHub 已实际运行首版 Windows/Linux、Python 3.10/3.12 四组检查通过；不代表这些环境中的真实 Office/LibreOffice 已测，也不需要在本机安装 WSL。
 
+现在默认预览也不需要 Office：安装 `pip install -e ".[preview,mcp]"`，`auto` / `native` 后端会读取导出 PPTX 的实际位置和内容，生成 PNG、SVG 和只读 HTML 逐页画廊。模型通过 MCP `get_slide` 读取单页、`preview_slide` 直接接收图片、`update_slide` 修改后取得新版本及预览，无须操作浏览器。修改必须带当前 `base_revision`，防止覆盖并发编辑。导出的 PPTX 仍然包含可编辑文字、表格和图表。内置预览的字体与图表内部布局可能不同于 Office，人工事实和视觉验收仍需完成；交互式浏览器编辑界面尚未实现。
+
 ## MCP 启动与依赖升级
 
 当前依赖 FastMCP >=4.1,<5，已在 4.1.0 / MCP SDK 2.3.0 验证。旧版上限 <3 已移除，Authlib 弃用警告通过升级实际解决，没有过滤警告。推广/升级横幅关闭，正常启动与错误日志保留。
 
 start_demo.py 会显示实际 FastMCP 版本并等待 agent 请求，生成 PPT 使用 CLI 或连接的 agent 工具。已运行的旧进程需 Ctrl+C 后重新启动才能载入新版。
+
+## 计算推导证据
+
+bind_evidence 现在接受 path/derivation：operation、precision、inputs。支持求和、差值、比值、占比与增长率，原始数值逐个绑定引用和位置。指标按图表系列名检查；每个引用必须含分类、单位和时期，输出时期应覆盖输入时期。单位必须一致，不自动换算。小数精度 0–6，使用 Decimal 的 ROUND_HALF_UP。比值单位写 ratio，占比和增长率写 %。
+
+增长率按照 (第二个数 - 第一个数) / 第一个数 × 100 计算。错引、错算、重复操作数、单位时期错误、除零等会阻止交付。有效证明只适用于绑定的图表值，不会放行正文中相同数字。布局修复会保留并重新检查证据；改动内容后仍需重新绑定。
+
+完整无模型示例：python examples/calculated_pipeline.py --preview powerpoint。由 100 和 125 推导 25% 增长，原文、绑定 JSON 和运算记录可追溯；不会伪造人工批准。完整语义关系、负基数解释、翻译和单位换算仍需人工判断。

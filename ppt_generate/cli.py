@@ -26,7 +26,7 @@ def main():
             p.add_argument("--source", type=Path)
             p.add_argument(
                 "--preview-backend",
-                choices=["none", "auto", "powerpoint", "libreoffice"],
+                choices=["none", "auto", "native", "powerpoint", "libreoffice"],
                 default="none",
             )
     commands.add_parser("schema")
@@ -41,11 +41,15 @@ def main():
     p.add_argument("--env-file", type=Path)
     p.add_argument("--output-root", type=Path)
     p.add_argument(
-        "--preview-backend", choices=["none", "auto", "powerpoint", "libreoffice"], default="none"
+        "--preview-backend",
+        choices=["none", "auto", "native", "powerpoint", "libreoffice"],
+        default="none",
     )
     p = commands.add_parser("preview")
     p.add_argument("job_id")
-    p.add_argument("--backend", choices=["auto", "powerpoint", "libreoffice"], default="auto")
+    p.add_argument(
+        "--backend", choices=["auto", "native", "powerpoint", "libreoffice"], default="auto"
+    )
     p.add_argument("--base-revision")
     p.add_argument("--output-root", type=Path)
     p = commands.add_parser("job")

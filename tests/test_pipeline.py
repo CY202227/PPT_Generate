@@ -92,6 +92,9 @@ def test_mcp_contract(tmp_path, deck):
                 "get_task",
                 "cancel_task",
                 "cleanup_history",
+                "get_slide",
+                "preview_slide",
+                "update_slide",
             }
             result = await client.call_tool("render_deck", {"deck": deck})
             assert result.data["success"] is True
