@@ -135,6 +135,48 @@ class DeckPipeline:
             raise ValueError("quality report escapes saved revision")
         return json.loads(path.read_text(encoding="utf-8"))
 
+    def get_slide(self, job_id, page_number, base_revision=None):
+        from .native_preview import resolve_pages
+
+        saved = self.get_job(job_id)
+        manifest = saved["manifest"]
+        if base_revision is not None and manifest["revision"] != base_revision:
+            raise ValueError("revision conflict: reload job before reading slide")
+        if (
+            isinstance(page_number, bool)
+            or not isinstance(page_number, int)
+            or not 1 <= page_number <= len(saved["deck"]["slides"])
+        ):
+            raise ValueError("page_number is outside deck")
+        pptx = self.root / job_id / manifest["revision"] / "presentation.pptx"
+        return {
+            "success": True,
+            "job_id": job_id,
+            "revision": manifest["revision"],
+            "page_number": page_number,
+            "slide_count": len(saved["deck"]["slides"]),
+            "slide": saved["deck"]["slides"][page_number - 1],
+            "scene": resolve_pages(pptx)[page_number - 1],
+            "issues": [
+                issue
+                for issue in saved["quality"].get("layout", {}).get("issues", [])
+                if issue.get("page") == page_number
+            ],
+        }
+
+    def preview_slide(self, job_id, page_number, base_revision=None):
+        slide = self.get_slide(job_id, page_number, base_revision)
+        manifest = self.preview(job_id, "native", slide["revision"])
+        directory = Path(manifest["preview_report"]).parent
+        return {
+            **self.get_slide(job_id, page_number, manifest["revision"]),
+            "preview_file": str(directory / f"slide-{page_number:03d}.png"),
+            "svg_file": str(directory / f"slide-{page_number:03d}.svg"),
+            "browser_preview": str(directory / "index.html"),
+            "preview_backend": "native",
+            "delivery": manifest["delivery"],
+        }
+
     def _snapshot_quality(self, manifest, quality, name, payload):
         revision = self.root / manifest["job_id"] / manifest["revision"]
         snapshot = revision / "reviews" / uuid.uuid4().hex
@@ -239,6 +281,8 @@ class DeckPipeline:
                 quality = self._quality(manifest)
                 quality.get("reviews", {}).pop("visual_review", None)
                 quality["layout"] = report
+                if report["backend"] in {"powerpoint", "libreoffice"}:
+                    quality["office_layout"] = report
                 quality["delivery"] = delivery_gate(quality)
                 (staging / "quality.json").write_text(
                     json.dumps(quality, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -259,6 +303,9 @@ class DeckPipeline:
                         ],
                     }
                 )
+                if report["backend"] == "native":
+                    manifest["browser_preview"] = str(destination / "index.html")
+                    manifest["scene_report"] = str(destination / "scene.json")
                 pending = job / ("manifest-preview-" + snapshot + ".tmp")
                 pending.write_text(
                     json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -274,7 +321,7 @@ class DeckPipeline:
     def repair_preview(self, job_id, base_revision=None, max_attempts=2):
         """Repair measured layout defects in isolated candidates and promote only a clean preview.
 
-        Uses the original PowerPoint backend, preserves all deck content, and checks
+        Uses the original native/PowerPoint backend, preserves all deck content, and checks
         revision conflicts after the engine returns. Failed candidates remain inspectable.
         """
         from .repair import repair_layout
@@ -296,8 +343,12 @@ class DeckPipeline:
             raise ValueError("quality report escapes saved revision")
         quality = json.loads(quality_path.read_text(encoding="utf-8"))
         report = quality.get("layout", {})
-        if report.get("backend") != "powerpoint" or report.get("status") != "issues_found":
-            raise ValueError("Repair requires an existing PowerPoint preview with measured issues")
+        if (
+            report.get("backend") not in {"powerpoint", "native"}
+            or report.get("status") != "issues_found"
+        ):
+            raise ValueError("Repair requires an existing native or PowerPoint preview with issues")
+        repair_backend = report["backend"]
         source_path = revision / "source.txt"
         source = source_path.read_text(encoding="utf-8") if source_path.is_file() else None
         candidates = DeckPipeline(job / "repair-candidates")
@@ -326,7 +377,7 @@ class DeckPipeline:
                 if not changes:
                     break
                 candidate = candidates.preview(
-                    candidate["job_id"], "powerpoint", candidate["revision"]
+                    candidate["job_id"], repair_backend, candidate["revision"]
                 )
                 updated = json.loads(Path(candidate["quality_report"]).read_text(encoding="utf-8"))
                 report = updated["layout"]
@@ -345,6 +396,8 @@ class DeckPipeline:
                             "quality_report",
                             "preview_report",
                             "bindings_report",
+                            "browser_preview",
+                            "scene_report",
                         ):
                             if key not in manifest:
                                 continue

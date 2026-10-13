@@ -18,6 +18,8 @@ PowerPoint exports real pages and measures text bounds against actual textbox/ce
 
 LibreOffice exports a PDF using a separate process profile and renders it through PyMuPDF. It checks extracted PDF text bounds and page count. It does not promise textbox capacity/overlap detection. This backend has automated adapter tests but has not been live-tested on this Windows development host.
 
+The default `auto` backend is now `native`: exported PPTX geometry and editable text/table/chart data are resolved into SVG and rendered to PNG by PyMuPDF. This works without Office, LibreOffice or browser control. Its text capacity/overlap checks estimate font metrics; chart internals and fonts can differ from Office. The report states `office_verification: not_performed`. MCP returns page images directly and the HTML gallery supports human inspection. Neither preview nor successful repair grants automatic human review approval. Native and PowerPoint text-capacity reports can drive the bounded repair loop; optional Office issues remain blockers even after another native preview.
+
 Preview snapshots are bound to a revision. A failed preview leaves the current manifest/PPTX intact. A new content revision does not inherit old preview success. `visual_review` remains `required`, even when measured checks pass.
 
 ## Local verification

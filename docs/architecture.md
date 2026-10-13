@@ -18,8 +18,10 @@ Quality reports separate structural/capacity checks, editorial heuristics, actua
 
 Optional extras keep basic rendering independent of model providers and MCP. Source material is sent externally only by planning. The package never loads a repository `.env` implicitly; use environment variables, `PPT_GENERATE_ENV_FILE`, or the CLI's `--env-file`.
 
-## Office-independent use and browser editing gap
+## Office-independent preview and MCP editing
 
-Planning, JSON revision and native editable PPTX export work without PowerPoint or LibreOffice. Those applications are optional actual-PPTX preview engines. Missing them prevents engine preview, not artifact generation. Current delivery readiness also requires preview evidence, so an Office-free host can export a usable file while its quality status remains needs_review.
+Planning, slide revision, native editable PPTX export and the default SVG/PNG preview work without PowerPoint or LibreOffice. The preview extra supplies PyMuPDF for PNG rendering; no browser automation is required. Optional PowerPoint/LibreOffice checks provide additional actual-PPTX rendering evidence. Human factual and visual review remains required.
 
-There is currently no browser slide editor or built-in browser preview backend. revise_slide is an agent/API operation, not a visual user interface. The next product priority is an Office-independent browser workflow: preview individual slides, edit their structured content, save revisions and export native PPTX. A shared resolved layout representation should drive browser and PPTX geometry; browser screenshots alone must not replace editable export objects. Browser layout evidence should state its renderer and scope, and actual Office/LibreOffice verification should remain an optional additional check. This is a planned direction, not an implemented capability.
+MCP get_slide reads structured content and resolved geometry; preview_slide returns an inline PNG image plus SVG and an offline HTML gallery; update_slide requires the current revision, changes one page, exports native PPTX and returns its new preview. Agents use these tools directly, without clicking a browser. Text-only clients can use the structured scene. The HTML gallery is a read-only human viewing surface; an interactive browser editor remains future work.
+
+The native preview reads positions, fonts, table cells and chart data from the exported PPTX, including geometry changed by repair. Its font measurements and chart internals are approximations, not actual Office rendering. Reports record that scope and require human review. Known issues from an optional Office check remain blockers after a later native preview.

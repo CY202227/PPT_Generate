@@ -28,6 +28,8 @@ def _run(command, timeout):
 
 
 def render_preview(pptx_path, output_directory, backend="auto", timeout=120):
+    if backend in {"auto", "native"}:
+        return _render_preview(pptx_path, output_directory, "native", timeout)
     # Engine ownership lasts until the worker finishes, even if its async caller cancels.
     # Serialize application access across MCP servers, not unrelated deck rendering.
     lock = Path(tempfile.gettempdir()) / "ppt-generate-preview-engine.lock"
@@ -38,12 +40,16 @@ def render_preview(pptx_path, output_directory, backend="auto", timeout=120):
 def _render_preview(pptx_path, output_directory, backend="auto", timeout=120):
     pptx = Path(pptx_path).resolve()
     output = Path(output_directory).resolve()
-    if backend not in {"auto", "powerpoint", "libreoffice"}:
-        raise ValueError("backend must be auto, powerpoint or libreoffice")
+    if backend not in {"auto", "native", "powerpoint", "libreoffice"}:
+        raise ValueError("backend must be auto, native, powerpoint or libreoffice")
     if backend == "auto":
-        backend = "powerpoint" if os.name == "nt" else "libreoffice"
+        backend = "native"
     output.mkdir(parents=True, exist_ok=True)
-    if backend == "powerpoint":
+    if backend == "native":
+        from .native_preview import render_native
+
+        report = render_native(pptx, output)
+    elif backend == "powerpoint":
         if os.name != "nt":
             raise PreviewUnavailable("PowerPoint previews require Windows and PowerPoint")
         with as_file(files("ppt_generate.resources").joinpath("powerpoint_preview.ps1")) as script:

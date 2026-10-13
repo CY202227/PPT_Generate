@@ -2,6 +2,10 @@
 
 ## 0.4.0 — unreleased
 
+- Office-independent default SVG/PNG preview and offline HTML gallery from exported PPTX geometry.
+- MCP single-page reading, inline image previews and revision-protected editing with editable export.
+- Native preview repair support; preserve optional Office issues as delivery blockers.
+
 - Source-backed decimal chart calculations with explicit operands, rounding and path-scoped numeric exemptions.
 - Public evidence schema and proof-preserving layout repair; reproducible calculated-growth example.
 - Agent-readable quality reports in get_job and matching saved job identity checks.

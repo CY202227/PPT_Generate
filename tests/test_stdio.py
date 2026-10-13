@@ -30,9 +30,33 @@ def test_external_agent_startup(tmp_path):
                 "get_task",
                 "cancel_task",
                 "cleanup_history",
+                "get_slide",
+                "preview_slide",
+                "update_slide",
             }
             result = await client.call_tool("get_deck_schema", {})
             assert result.data["schema_version"] == "1.0"
+            rendered = await client.call_tool(
+                "render_deck",
+                {
+                    "deck": {
+                        "schema_version": "1.0",
+                        "title": "Agent preview",
+                        "slides": [
+                            {
+                                "layout": "cover",
+                                "title": "Agent preview",
+                                "subtitle": "No Office required",
+                            }
+                        ],
+                    }
+                },
+            )
+            preview = await client.call_tool(
+                "preview_slide", {"job_id": rendered.data["job_id"], "page_number": 1}
+            )
+            assert any(item.type == "image" for item in preview.content)
+            assert preview.data["preview_backend"] == "native"
 
     asyncio.run(asyncio.wait_for(run(), timeout=30))
     output = log.read_text(encoding="utf-8")

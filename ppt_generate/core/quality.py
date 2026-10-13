@@ -56,7 +56,7 @@ def audit_numbers(deck, source, derived_paths=()):
 def delivery_gate(quality):
     blocked = [
         name
-        for name in ("editorial", "evidence", "provenance", "layout")
+        for name in ("editorial", "evidence", "provenance", "layout", "office_layout")
         if quality.get(name, {}).get("status") == "issues_found"
     ]
     reviews = quality.get("reviews", {})

@@ -4,6 +4,8 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from fastmcp import FastMCP
+from fastmcp.tools.base import ToolResult
+from fastmcp.utilities.types import Image as MCPImage
 
 from ppt_generate.core.deck import get_schema
 from ppt_generate.core.documents import extract_document
@@ -31,6 +33,69 @@ class PPTGenerateServer:
         self._setup_tools()
 
     def _setup_tools(self):
+        @self.app.tool()
+        async def get_slide(
+            job_id: str, page_number: int, base_revision: str | None = None
+        ) -> dict:
+            """Read one slide, resolved geometry and quality issues without a browser or Office.
+
+            Use its revision for update_slide to avoid overwriting concurrent edits.
+            """
+            try:
+                return await asyncio.to_thread(
+                    self.pipeline.get_slide, job_id, page_number, base_revision
+                )
+            except Exception as error:
+                return failure(error)
+
+        @self.app.tool()
+        async def preview_slide(
+            job_id: str, page_number: int, base_revision: str | None = None
+        ) -> ToolResult:
+            """Return a slide PNG directly to the model plus SVG/HTML and structured geometry.
+
+            No browser control or Office installation needed. Requires preview extra.
+            Native fonts/chart internals may differ from Office; human review remains required.
+            """
+            try:
+                result = await asyncio.to_thread(
+                    self.pipeline.preview_slide, job_id, page_number, base_revision
+                )
+                return ToolResult(
+                    content=[MCPImage(path=result["preview_file"]), result],
+                    structured_content=result,
+                )
+            except Exception as error:
+                return ToolResult(structured_content=failure(error))
+
+        @self.app.tool()
+        async def update_slide(
+            job_id: str, page_number: int, slide: dict, base_revision: str
+        ) -> ToolResult:
+            """Save one slide revision, export editable PPTX and return its Office-free preview.
+
+            Only the selected slide changes; stale revisions are rejected. Exported PPTX
+            is preserved if preview fails, with preview_error in the result.
+            """
+            result = None
+            try:
+                result = await asyncio.to_thread(
+                    self.pipeline.revise, job_id, page_number, slide, base_revision
+                )
+                preview = await asyncio.to_thread(
+                    self.pipeline.preview_slide, job_id, page_number, result["revision"]
+                )
+                preview["exported_file"] = result["exported_file"]
+                return ToolResult(
+                    content=[MCPImage(path=preview["preview_file"]), preview],
+                    structured_content=preview,
+                )
+            except Exception as error:
+                if result:
+                    result["preview_error"] = failure(error)["error"]
+                    return ToolResult(structured_content=result)
+                return ToolResult(structured_content=failure(error))
+
         @self.app.tool()
         async def cleanup_history(
             job_id: str, keep: int = 3, older_than_days: int = 30, apply: bool = False
@@ -157,10 +222,10 @@ class PPTGenerateServer:
         async def preview_ppt(
             job_id: str, backend: str = "auto", base_revision: str | None = None
         ) -> dict:
-            """Render actual PNG pages and attach measured layout evidence to a saved job.
+            """Render PNG pages and attach scoped layout evidence to a saved job.
 
-            Requires local Windows PowerPoint or LibreOffice plus preview extra.
-            Backend scopes differ; aesthetic/factual review remains required.
+            auto/native use Office-free previews (preview extra); powerpoint/libreoffice
+            explicitly request those applications. Backend scopes differ; human review remains required.
             """
             try:
                 async with self.preview_lock:
@@ -174,9 +239,9 @@ class PPTGenerateServer:
         async def repair_ppt(
             job_id: str, base_revision: str | None = None, max_attempts: int = 2
         ) -> dict:
-            """Repair measured PowerPoint overflow and conservative overlap/bounds without changing content.
+            """Repair native/PowerPoint overflow and conservative overlap/bounds without changing content.
 
-            Requires a prior failing PowerPoint preview. At most two preview attempts;
+            Requires a prior failing native or PowerPoint preview. At most two preview attempts;
             only a clean candidate is promoted. Unsupported defects retain the original.
             """
             try:

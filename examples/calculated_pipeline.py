@@ -26,7 +26,7 @@ def run(root, preview="none"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-root", type=Path, default=Path("outputs/calculated-example"))
-    parser.add_argument("--preview", choices=["none", "powerpoint", "libreoffice"], default="none")
+    parser.add_argument("--preview", choices=["none", "native", "powerpoint", "libreoffice"], default="none")
     args = parser.parse_args()
     result = run(args.output_root, args.preview)
     print(json.dumps(result, indent=2))

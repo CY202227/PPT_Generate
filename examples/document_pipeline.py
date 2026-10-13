@@ -114,7 +114,7 @@ def run(root, format="md", preview="none"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--format", choices=["md", "pdf", "docx"], default="md")
-    parser.add_argument("--preview", choices=["none", "powerpoint", "libreoffice"], default="none")
+    parser.add_argument("--preview", choices=["none", "native", "powerpoint", "libreoffice"], default="none")
     parser.add_argument("--output-root", type=Path)
     args = parser.parse_args()
     result = run(
