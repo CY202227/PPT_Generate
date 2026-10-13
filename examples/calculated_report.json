@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "title": "Synthetic calculated report",
+  "slides": [
+    {
+      "layout": "cover",
+      "title": "Source-backed calculations",
+      "subtitle": "Synthetic data; explicit calculation evidence"
+    },
+    {
+      "layout": "chart",
+      "title": "Revenue growth",
+      "unit": "%",
+      "period": "2026",
+      "categories": [
+        "Q2"
+      ],
+      "series": [
+        {
+          "name": "Revenue",
+          "values": [
+            25
+          ]
+        }
+      ],
+      "source": "Synthetic calculated_source.md",
+      "notes": "Synthetic source values: Q1 100 CNY, Q2 125 CNY. Growth = (125 - 100) / 100 * 100 = 25%. Source quotes and exact offsets are saved in the binding report."
+    }
+  ]
+}

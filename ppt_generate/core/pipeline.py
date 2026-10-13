@@ -173,6 +173,12 @@ class DeckPipeline:
             source = (job / manifest["revision"] / "source.txt").read_text(encoding="utf-8")
             quality = self._quality(manifest)
             quality["provenance"] = audit_bindings(saved["deck"], source, bindings)
+            derived = {
+                reference["path"]
+                for reference in quality["provenance"]["references"]
+                if reference["status"] == "calculation_checks_passed"
+            }
+            quality["evidence"] = audit_numbers(saved["deck"], source, derived)
             quality.get("reviews", {}).pop("factual_review", None)
             return self._snapshot_quality(manifest, quality, "bindings", bindings)
 
@@ -294,6 +300,15 @@ class DeckPipeline:
         source = source_path.read_text(encoding="utf-8") if source_path.is_file() else None
         candidates = DeckPipeline(job / "repair-candidates")
         candidate = candidates.render(saved["deck"], source_material=source)
+        if original.get("bindings_report"):
+            bindings_path = Path(original["bindings_report"]).resolve()
+            if not bindings_path.is_relative_to(revision.resolve()):
+                raise ValueError("bindings report escapes saved revision")
+            candidate = candidates.bind_evidence(
+                candidate["job_id"],
+                json.loads(bindings_path.read_text(encoding="utf-8")),
+                candidate["revision"],
+            )
         candidate_file = Path(candidate["exported_file"])
         shutil.copyfile(revision / "presentation.pptx", candidate_file)
         planning_path = revision / "planning.json"
@@ -327,7 +342,10 @@ class DeckPipeline:
                             "deck_file",
                             "quality_report",
                             "preview_report",
+                            "bindings_report",
                         ):
+                            if key not in manifest:
+                                continue
                             manifest[key] = str(
                                 final / Path(manifest[key]).relative_to(old_directory)
                             )

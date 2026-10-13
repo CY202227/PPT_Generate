@@ -151,7 +151,7 @@ This changes font sizes in flagged text frames and conservatively repositions fl
 
 Seven native layouts are supported: cover, bullets, split, table, chart, kpi (1–3 metrics) and timeline (1–4 events). Schema 1.0 is extended additively in this alpha; use the bundled schema rather than hard-coded layout lists.
 
-`render --source REPORT` saves extracted source material. `bind-evidence JOB_ID bindings.json --base-revision REVISION` attaches chart references. Each reference has a chart value JSON `path`, zero-based character `start` in saved source.txt, and exact `quote`. Metric, category, unit, period and value must occur in that quote; translation and derived values are not automatically certified. Missing chart bindings keep delivery pending. String claims and metric relationships still need human review.
+`render --source REPORT` saves extracted source material. `bind-evidence JOB_ID bindings.json --base-revision REVISION` attaches chart references. Each reference has a chart value JSON `path`, zero-based character `start` in saved source.txt, and exact `quote`. Metric, category, unit, period and value must occur in that quote; translation and semantic relationships are not automatically certified. Whitelisted derived values can use explicit calculation evidence. Missing chart bindings keep delivery pending. String claims and metric relationships still need human review.
 
 `review JOB_ID --kind factual_review --decision approved --reviewer NAME --base-revision REVISION` records an explicitly supplied human decision. Use visual_review after inspecting engine previews. Rejection blocks delivery. Both approvals plus all required automated checks can make delivery.ready true. This local record does not authenticate identity. Never manufacture approvals. Changed content resets reviews/bindings; fresh previews reset visual approval, and new evidence bindings reset factual approval.
 
@@ -187,3 +187,23 @@ The supported MCP dependency is FastMCP >=4.1,<5, tested with 4.1.0 and MCP SDK 
 start_demo.py starts the MCP service and waits for an agent client. It does not automatically generate a deck. Restart an already-running process after upgrading. Use the CLI generation/rendering commands or the offline document example to make a presentation.
 
 When migrating an existing v2 environment, pip can remove overlapping implementation files during uninstall. If import fails after upgrade, reinstall the implementation package matching the installed FastMCP version. The local 2.14.7 -> 4.1.0 migration was repaired with python -m pip install --force-reinstall --no-deps "fastmcp-slim[client,server]==4.1.0". Fresh installations used in CI do not need this repair step.
+
+## Source-backed calculations
+
+Evidence bindings support both literal path/start/quote and calculated path/derivation forms. The get_deck_schema MCP tool returns evidence_binding_schema for upstream agents. Calculated input quotes must contain the chart series metric and each input category, unit and period. Input periods must be represented in the output period (for example 2025–2026). Inputs must have one consistent unit; unit conversion and metric aliases/translations are not performed.
+
+Operations use ordered inputs:
+
+- sum: add 2–8 inputs; output uses the input unit.
+- difference: first minus second; output uses the input unit.
+- ratio: first divided by second; output unit is ratio.
+- percentage: first divided by second times 100; output unit is %.
+- percentage_change: (second minus first) divided by first times 100; output unit is %.
+
+precision specifies 0–6 decimal places using decimal ROUND_HALF_UP. All operands need exact source offsets/quotes, and the displayed chart value must equal the rounded result. Duplicate operands, mismatched context/units, zero denominators and wrong answers block delivery. No arbitrary expressions or code are evaluated. Only an individually verified chart path is exempted from literal-number presence checks; a matching number elsewhere in slide prose does not inherit that exemption. Rebinding resets factual approval. Geometry repair carries bindings into its candidate and rechecks them before promotion.
+
+```sh
+python examples/calculated_pipeline.py --preview powerpoint
+```
+
+This offline synthetic example derives 25% growth from 100 and 125, stores the complete proof and previews a native editable chart. Omit preview where no engine exists. Human review remains pending: valid arithmetic and matching context cannot establish that the chosen source facts, metric relationship, category or negative-baseline interpretation are appropriate.

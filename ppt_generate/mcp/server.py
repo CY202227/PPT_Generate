@@ -8,6 +8,7 @@ from fastmcp import FastMCP
 from ppt_generate.core.deck import get_schema
 from ppt_generate.core.documents import extract_document
 from ppt_generate.core.errors import failure
+from ppt_generate.core.evidence import get_evidence_schema
 from ppt_generate.core.pipeline import DeckPipeline, plan_deck
 from ppt_generate.core.retention import cleanup_job
 from ppt_generate.core.tasks import GenerationQueue
@@ -189,8 +190,9 @@ class PPTGenerateServer:
         async def bind_evidence(job_id: str, bindings: list[dict], base_revision: str) -> dict:
             """Attach exact source quotes and offsets to chart value JSON paths.
 
-            Each reference contains path, start and quote. Exact metric/category/unit/period
-            terms must appear in the quote. Human semantic review remains required.
+            Use path/start/quote for literal evidence, or path/derivation for whitelisted
+            source-backed decimal calculations. Get the evidence schema via get_deck_schema.
+            Human semantic review remains required.
             """
             try:
                 return await asyncio.to_thread(
@@ -248,6 +250,7 @@ class PPTGenerateServer:
             return {
                 "schema_version": "1.0",
                 "json_schema": get_schema(),
+                "evidence_binding_schema": get_evidence_schema(),
                 "quality": "Dense content can be rejected; shorten or split it. Visual review required.",
             }
 

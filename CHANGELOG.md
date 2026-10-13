@@ -2,6 +2,9 @@
 
 ## 0.4.0 — unreleased
 
+- Source-backed decimal chart calculations with explicit operands, rounding and path-scoped numeric exemptions.
+- Public evidence schema and proof-preserving layout repair; reproducible calculated-growth example.
+
 - Migrate MCP dependency to FastMCP >=4.1,<5 and MCP SDK v2.
 - Quiet stdio startup banner, explicit installed version/wait state, and startup log regression checks.
 

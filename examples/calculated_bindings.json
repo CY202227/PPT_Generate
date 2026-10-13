@@ -1,0 +1,27 @@
+[
+  {
+    "path": "/slides/1/series/0/values/0",
+    "derivation": {
+      "operation": "percentage_change",
+      "precision": 2,
+      "inputs": [
+        {
+          "value": 100,
+          "start": 0,
+          "quote": "2026 Q1 Revenue 100 CNY",
+          "category": "Q1",
+          "unit": "CNY",
+          "period": "2026"
+        },
+        {
+          "value": 125,
+          "start": 24,
+          "quote": "2026 Q2 Revenue 125 CNY",
+          "category": "Q2",
+          "unit": "CNY",
+          "period": "2026"
+        }
+      ]
+    }
+  }
+]
