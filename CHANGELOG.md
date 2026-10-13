@@ -2,6 +2,9 @@
 
 ## 0.4.0 — unreleased
 
+- Explicit current preview/review snapshot and terminal task-ticket retention, with active/reference protection.
+- Reject Windows junctions in cleanup and queue records; workers tolerate removal of cancelled tickets.
+
 - Office-independent default SVG/PNG preview and offline HTML gallery from exported PPTX geometry.
 - MCP single-page reading, inline image previews and revision-protected editing with editable export.
 - Native preview repair support; preserve optional Office issues as delivery blockers.

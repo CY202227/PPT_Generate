@@ -1,5 +1,9 @@
 import asyncio
 import json
+import os
+import subprocess
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -137,3 +141,116 @@ def test_export_cannot_be_cancelled_and_shutdown_waits(tmp_path, monkeypatch):
             await queue.close()
 
     asyncio.run(asyncio.wait_for(scenario(), 5))
+
+
+def test_snapshot_cleanup_protects_references_recent_files_and_latest(tmp_path):
+    pipeline = DeckPipeline(tmp_path)
+    result = pipeline.render(DECK)
+    revision = tmp_path / result["job_id"] / result["revision"]
+    old = time.time() - 40 * 86400
+    quality = Path(result["quality_report"]).read_bytes()
+    snapshots = {}
+    for kind in ("previews", "reviews"):
+        snapshots[kind] = []
+        for index in range(5):
+            directory = revision / kind / f"{index:032x}"
+            directory.mkdir(parents=True)
+            file = directory / "quality.json"
+            file.write_bytes(quality)
+            os.utime(file, (old, old) if index != 2 else (time.time(), time.time()))
+            os.utime(directory, (old + index, old + index))
+            snapshots[kind].append(directory)
+    manifest = tmp_path / result["job_id"] / "manifest.json"
+    result["preview_report"] = str(snapshots["previews"][0] / "quality.json")
+    result["quality_report"] = str(snapshots["reviews"][0] / "quality.json")
+    manifest.write_text(json.dumps(result), encoding="utf-8")
+    before = manifest.read_bytes()
+    selected = cleanup_job(pipeline, result["job_id"], keep=1)
+    assert len(selected["selected"]) == 4
+    assert all(directory.exists() for group in snapshots.values() for directory in group)
+    cleanup_job(pipeline, result["job_id"], keep=1, apply=True)
+    for group in snapshots.values():
+        assert all(group[index].exists() for index in (0, 2, 4))
+        assert all(not group[index].exists() for index in (1, 3))
+    assert manifest.read_bytes() == before
+    assert Path(result["exported_file"]).is_file()
+
+
+def test_terminal_task_cleanup_preserves_jobs_active_tasks_and_worker(tmp_path):
+    async def scenario():
+        pipeline = DeckPipeline(tmp_path)
+        job = pipeline.render(DECK)
+        queue = GenerationQueue(pipeline, concurrency=1)
+        await queue.start()
+        old = time.time() - 40 * 86400
+        statuses = ["completed", "failed", "cancelled", "interrupted", "completed", "queued"]
+        try:
+            for index, status in enumerate(statuses):
+                task_id = f"{index:032x}"
+                record = {
+                    "task_id": task_id,
+                    "status": status,
+                    "updated_at": datetime.fromtimestamp(old + index, timezone.utc).isoformat(),
+                }
+                if status == "completed":
+                    record["result"] = job
+                queue.records[task_id] = record
+                path = queue.root / (task_id + ".json")
+                path.write_text(json.dumps(record), encoding="utf-8")
+                os.utime(path, (old, old))
+            # Cancelled queued tickets can still be in the worker's queue when cleaned.
+            queue.queue.put_nowait(f"{2:032x}")
+            dry = await queue.cleanup(keep=1)
+            assert len(dry["selected"]) == 4
+            assert len(queue.records) == 6
+            applied = await queue.cleanup(keep=1, apply=True)
+            assert applied["bytes"] == dry["bytes"]
+            assert set(queue.records) == {f"{4:032x}", f"{5:032x}"}
+            await asyncio.wait_for(queue.queue.join(), 2)
+            assert not queue.workers[0].done()
+            with pytest.raises(FileNotFoundError):
+                await queue.get(f"{2:032x}")
+            assert Path(job["exported_file"]).is_file()
+        finally:
+            await queue.close()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("options", [{"keep": True}, {"older_than_days": -1}, {"apply": "yes"}])
+def test_task_cleanup_rejects_invalid_policy_before_start(tmp_path, options):
+    queue = GenerationQueue(DeckPipeline(tmp_path))
+    with pytest.raises(ValueError):
+        asyncio.run(queue.cleanup(**options))
+    assert not queue.root.exists()
+
+
+@pytest.mark.parametrize("subject", ["snapshots", "tasks"])
+def test_cleanup_refuses_real_directory_links(tmp_path, subject):
+    pipeline = DeckPipeline(tmp_path / "outputs")
+    result = pipeline.render(DECK)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    sentinel = outside / "keep.txt"
+    sentinel.write_text("must remain", encoding="utf-8")
+    target = (
+        pipeline.root / result["job_id"] / result["revision"] / "previews"
+        if subject == "snapshots"
+        else pipeline.root / "tasks"
+    )
+    if os.name == "nt":
+        created = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(target), str(outside)],
+            capture_output=True,
+            check=False,
+        )
+        assert created.returncode == 0
+    else:
+        target.symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ValueError, match="linked"):
+        if subject == "snapshots":
+            cleanup_job(pipeline, result["job_id"], keep=1, older_than_days=0, apply=True)
+        else:
+            asyncio.run(GenerationQueue(pipeline).cleanup(apply=True))
+    assert sentinel.read_text(encoding="utf-8") == "must remain"
+    assert Path(result["exported_file"]).is_file()

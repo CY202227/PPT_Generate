@@ -3,6 +3,7 @@
 import asyncio
 import json
 import re
+import time
 import uuid
 from datetime import datetime, timezone
 
@@ -10,6 +11,7 @@ from filelock import FileLock
 
 from .errors import failure
 from .pipeline import plan_deck
+from .retention import linked, validate_policy
 
 
 class GenerationQueue:
@@ -35,11 +37,15 @@ class GenerationQueue:
         self.stopping = False
         self.queue = asyncio.Queue()
         self.root.mkdir(parents=True, exist_ok=True)
+        if linked(self.root) or self.root.resolve().parent != self.pipeline.root.resolve():
+            raise ValueError("Queue refuses linked task directories")
         self.owner_lock.acquire()
         try:
             for path in self.root.glob("*.json"):
                 if not re.fullmatch(r"[0-9a-f]{32}", path.stem):
                     continue
+                if linked(path):
+                    raise ValueError("Queue refuses linked task records")
                 record = json.loads(path.read_text(encoding="utf-8"))
                 if record.get("task_id") != path.stem:
                     raise ValueError("Invalid saved task")
@@ -111,6 +117,48 @@ class GenerationQueue:
             raise FileNotFoundError("Task does not exist")
         return self._public(self.records[task_id])
 
+    async def cleanup(self, keep=20, older_than_days=30, apply=False):
+        """Delete only old terminal tickets, never their exported jobs or active requests."""
+        cutoff = validate_policy(keep, older_than_days, apply)
+        await self.start()
+        if linked(self.root) or self.root.resolve().parent != self.pipeline.root.resolve():
+            raise ValueError("Cleanup refuses linked task directories")
+        terminal = []
+        for task_id, record in self.records.items():
+            if task_id in self.running or record["status"] not in {
+                "completed",
+                "failed",
+                "cancelled",
+                "interrupted",
+            }:
+                continue
+            timestamp = datetime.fromisoformat(record["updated_at"])
+            if timestamp.tzinfo is None:
+                raise ValueError("Task cleanup requires timezone-aware timestamps")
+            terminal.append((timestamp.timestamp(), task_id))
+        terminal.sort(reverse=True)
+        selected = []
+        for timestamp, task_id in terminal[keep:]:
+            path = self.root / (task_id + ".json")
+            if linked(path) or path.resolve().parent != self.root.resolve():
+                raise ValueError("Cleanup refuses linked task records")
+            if timestamp <= cutoff and path.stat().st_mtime <= cutoff:
+                selected.append(
+                    {"task_id": task_id, "path": str(path.resolve()), "bytes": path.stat().st_size}
+                )
+        # No await between selecting and removing: the owning queue cannot change records here.
+        if apply:
+            for item in selected:
+                (self.root / (item["task_id"] + ".json")).unlink()
+                del self.records[item["task_id"]]
+        return {
+            "success": True,
+            "dry_run": not apply,
+            "selected": selected,
+            "bytes": sum(item["bytes"] for item in selected),
+            "checked_at": time.time(),
+        }
+
     async def cancel(self, task_id):
         await self.get(task_id)
         record = self.records[task_id]
@@ -173,7 +221,9 @@ class GenerationQueue:
         while True:
             task_id = await self.queue.get()
             try:
-                record = self.records[task_id]
+                record = self.records.get(task_id)
+                if record is None:
+                    continue
                 if self.stopping or record["status"] != "queued":
                     continue
                 task = asyncio.create_task(self._execute(record))

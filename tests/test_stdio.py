@@ -30,6 +30,7 @@ def test_external_agent_startup(tmp_path):
                 "get_task",
                 "cancel_task",
                 "cleanup_history",
+                "cleanup_tasks",
                 "get_slide",
                 "preview_slide",
                 "update_slide",
