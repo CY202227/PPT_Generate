@@ -78,8 +78,8 @@ The seventeen tools are:
 - `revise_slide`: replace one 1-based page and publish a new revision. Optional `base_revision` rejects stale edits.
 - `bind_evidence`: attach exact source locations and quotes to chart values; checks contextual terminology and values.
 - `record_review`: record explicit human factual/visual decisions for the current revision; automatic blockers cannot be overridden.
-- `repair_ppt`: repair measured PowerPoint text overflow, conservative overlap and object bounds in isolated candidates, without changing content. At most two attempts; only a candidate with clean measured checks and no known quality blockers is promoted.
-- `preview_ppt`: export real PNG pages, measure supported layout properties, and attach version-bound evidence. Requires a local rendering engine.
+- `repair_ppt`: repair native/PowerPoint text overflow, conservative overlap and object bounds in isolated candidates, without changing content. At most two attempts; only a candidate with clean checks and no known quality blockers is promoted.
+- `preview_ppt`: export PNG pages and attach version-bound layout evidence. Defaults to native; external rendering engines are optional.
 
 Tool failures return `success: false` with `error.code` and `error.message`. Codes include `invalid_input`, `not_found`, `conflict`, `authentication`, `provider_unavailable`, `job_busy` and `internal_error`. A successful export indicates an artifact was generated, not that it passed visual review.
 
